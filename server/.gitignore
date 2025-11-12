@@ -1,0 +1,36 @@
+# -------------------------------------------------------------------
+# Node.js
+# -------------------------------------------------------------------
+/node_modules
+/dist
+/build
+/coverage
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# -------------------------------------------------------------------
+# Environment Variables & Configuration
+# -------------------------------------------------------------------
+# Keep sensitive data out of source control
+.env
+.env.*
+.DS_Store
+
+# -------------------------------------------------------------------
+# TypeScript & Compiled Artifacts
+# -------------------------------------------------------------------
+# JavaScript files compiled from TypeScript (if not outputting to /dist)
+*.js.map
+
+# Directories created by ts-node/tsx (temp files)
+.tsbuildinfo
+*.tsbuildinfo
+
+# Ignore all compiled JS files in source directories if using 'outDir' (e.g., /dist)
+# If you compile your TS directly into your src/ folder:
+# /src/**/*.js
+# /src/**/*.js.map
