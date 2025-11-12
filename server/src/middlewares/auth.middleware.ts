@@ -1,7 +1,7 @@
 // src/middlewares/auth.middleware.ts (Revised with Logs)
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
- import User from "../models/user.model.js"; // Optional import if checking user existence
+//  import User from "../models/user.model.s"; // Optional import if checking user existence
 
 // Extend the Request type in Express to include the userId property
 interface AuthenticatedRequest extends Request {
