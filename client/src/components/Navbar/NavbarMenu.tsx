@@ -1,9 +1,5 @@
-import React from 'react'
-
-const NavbarMenu = () => {
-  return (
-    <div>NavbarMenu</div>
-  )
-}
-
-export default NavbarMenu
+export const navItems = [
+  { name: "Dashboard", href: "/dashboard" },
+  { name: "Editor", href: "/editor" },
+  { name: "Signin", href: "/signin" },
+];

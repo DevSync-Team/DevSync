@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import './globals.css'
+import "./globals.css";
+import { Footer, Navbar } from "@/components";
 
 export const metadata: Metadata = {
   title: "DevSync",
@@ -13,7 +14,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <main>
+        <Navbar />
+        <body>{children}</body>
+
+        <Footer />
+      </main>
     </html>
   );
 }
