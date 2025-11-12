@@ -1,9 +1,12 @@
-import React from 'react'
+import { HomeScreen } from "@/screens";
+import React from "react";
 
 const WelcomePage = () => {
   return (
-    <div>WelcomePage</div>
-  )
-}
+    <>
+      <HomeScreen />
+    </>
+  );
+};
 
-export default WelcomePage
+export default WelcomePage;
