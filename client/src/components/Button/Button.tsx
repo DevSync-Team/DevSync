@@ -32,13 +32,9 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <button {...props} className={buttonClass.trim()}>
-      {icon && iconPosition === "left" && (
-        <span className="text-lg">{icon}</span>
-      )}
+      {icon && iconPosition === "left" && <span className="text-lg">{icon}</span>}
       <span>{text}</span>
-      {icon && iconPosition === "right" && (
-        <span className="text-lg">{icon}</span>
-      )}
+      {icon && iconPosition === "right" && <span className="text-lg">{icon}</span>}
     </button>
   );
 };
