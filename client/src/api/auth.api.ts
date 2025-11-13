@@ -4,24 +4,13 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { SignInFormData } from '@/screens/auth/signin/schema/schema';
 import { SignupFormData } from '@/screens/auth/signup/schema/schema';
-
-// --- Configuration ---
-// Set your backend API base URL. Use an environment variable for production.
-// Example: NEXT_PUBLIC_API_URL=http://localhost:5000/api/auth
+ 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/auth";
 
 // Name of the cookie to store the JWT
 const TOKEN_COOKIE_NAME = 'authToken';
 
-// --- API Helper Functions ---
-
-/**
- * Stores the JWT token in a secure, httpOnly-like cookie.
- * NOTE: When setting a cookie from the client-side, we can't set the `httpOnly` flag. 
- * The `secure` and `sameSite` flags are crucial.
- * For true `httpOnly` protection, the cookie should be set by the server after login.
- * We'll use this client-side mechanism for demonstration/convenience.
- */
+ 
 export const setAuthTokenCookie = (token: string): void => {
     Cookies.set(TOKEN_COOKIE_NAME, token, {
         expires: 1, // 1 day expiration
@@ -97,9 +86,7 @@ export const apiLogin = async (data: SignInFormData): Promise<string> => {
  * Placeholder for the /api/auth/logout endpoint
  */
 export const apiLogout = (): void => {
-    // Since we use client-side cookies, logging out is just removing the cookie
-    removeAuthTokenCookie();
     
-    // You could optionally send a request to the backend to invalidate the JWT
-    // if you had a token blacklist implemented, but we skip that for now.
+    removeAuthTokenCookie();
+ 
 };
