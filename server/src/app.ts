@@ -2,7 +2,7 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.route.js";
-import { setupSwagger } from "./swagger.js"; // ✅ named import
+import { setupSwagger } from "./swagger.js";
 
 const app = express();
 
@@ -15,6 +15,6 @@ app.get("/", (req, res) => res.json({ message: "Welcome to DevSync API" }));
 app.use("/api/auth", authRoutes);
 
 // Swagger
-setupSwagger(app); // ✅ attach swagger
+setupSwagger(app); 
 
 export default app;
