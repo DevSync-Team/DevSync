@@ -1,3 +1,5 @@
+// src/screens/auth/signin/SigninForm.tsx
+
 "use client";
 
 import { FormButton, PasswordInput, TextInput } from "@/components";
@@ -7,18 +9,48 @@ import { FaCode } from "react-icons/fa";
 import { HiMail } from "react-icons/hi";
 import { SignInFormData, signinSchema } from "./schema/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "react-toastify";  
+import { apiLogin } from "@/api/auth.api";  
+import { useRouter } from "next/navigation"; 
 
 export default function SigninForm() {
+  const router = useRouter(); 
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<SignInFormData>({
     resolver: zodResolver(signinSchema),
   });
 
-  const onSubmit = (data: SignInFormData) => {
-    console.log("Form Data", data);
+  const onSubmit = async (data: SignInFormData) => {
+    try {
+      // 1. Call the API login function (handles cookie setting internally)
+      await apiLogin(data);
+
+      // 2. Show Success Toast
+      toast.success("Login successful! Redirecting...", {
+        position: "top-center",
+      });
+
+      // 3. Redirect the user to the protected dashboard
+      router.push("/dashboard"); 
+
+    } catch (err) {
+      const errorMessage = (err as Error).message;
+      
+ 
+      toast.error(errorMessage);
+
+     
+      if (errorMessage.includes("Invalid credentials")) {
+        setError("password", {  
+            type: "manual",
+            message: "Invalid email or password. Please try again.",
+        }, { shouldFocus: true });
+      }
+    }
   };
 
   return (
@@ -48,13 +80,13 @@ export default function SigninForm() {
           />
           <PasswordInput
             label="Password"
-            placeholder="Create a password"
+            placeholder="Enter your password"
             required
             {...register("password")}
             error={errors.password?.message}
           />
 
-          <FormButton text="Sigin" type="submit" loading={isSubmitting} />
+          <FormButton text="Sign in" type="submit" loading={isSubmitting} />
         </form>
 
         <p className="text-center text-gray-400 text-sm">
@@ -65,13 +97,8 @@ export default function SigninForm() {
         </p>
 
         <p className="text-center text-xs text-gray-500">
-          By creating an account, you agree to our{" "}
-          <a href="#" className="text-blue-400 hover:underline">
-            Terms of Service
-          </a>
-          and
-          <a href="#" className="text-blue-400 hover:underline">
-            Privacy Policy
+          <a href="/forgot-password" className="text-blue-400 hover:underline">
+            Forgot Password?
           </a>
         </p>
       </div>

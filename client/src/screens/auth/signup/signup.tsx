@@ -1,24 +1,53 @@
 "use client";
 
-import { FormButton, PasswordInput, TextInput } from "@/components";
+import { FormButton, PasswordInput, TextInput } from "@/components"; // Assuming these components exist
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { HiMail, HiUser, HiUserAdd } from "react-icons/hi";
 import { SignupFormData, signupSchema } from "./schema/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "react-toastify";
+import { apiSignup } from "@/api/auth.api"; 
+import { useRouter } from "next/navigation"; 
 
 export default function SignupForm() {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
+    reset,
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
+ 
+    mode: "onChange", 
+    
   });
 
-  const onSubmit = (data: SignupFormData) => {
-    console.log("Signup Data:", data);
-    // Handle signup API call here
+  const onSubmit = async (data: SignupFormData) => {
+    try {
+      await apiSignup(data);
+
+      toast.success("Account created successfully! Redirecting to sign-in.", {
+        position: "top-center",
+      });
+
+      reset(); 
+      router.push("/signin");
+
+    } catch (err) {
+      const errorMessage = (err as Error).message;
+
+      toast.error(errorMessage);
+
+      if (errorMessage.includes("Email already exists")) {
+        setError("email", {
+            type: "manual",
+            message: errorMessage,
+        }, { shouldFocus: true });
+      }
+    }
   };
 
   return (
@@ -57,14 +86,16 @@ export default function SignupForm() {
             placeholder="Create a password"
             required
             {...register("password")}
-            error={errors.password?.message}
+           
+            error={errors.password?.message} 
           />
           <PasswordInput
             label="Confirm Password"
             placeholder="Confirm your password"
             required
             {...register("confirmPassword")}
-            error={errors.confirmPassword?.message}
+           
+            error={errors.confirmPassword?.message} 
           />
 
           <FormButton
