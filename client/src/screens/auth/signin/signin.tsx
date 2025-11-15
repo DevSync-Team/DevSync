@@ -2,7 +2,7 @@
 
 "use client";
 
-import { FormButton, PasswordInput, TextInput } from "@/components";
+import { FormButton, Navbar, PasswordInput, TextInput } from "@/components";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { FaCode } from "react-icons/fa";
@@ -54,6 +54,8 @@ export default function SigninForm() {
   };
 
   return (
+     <>
+     <Navbar />
     <div className="min-h-screen flex items-center justify-center bg-[#0d1117] px-4">
       <div className="w-full flex flex-col gap-7 max-w-lg bg-[#111827] p-8 rounded-2xl shadow-lg border border-[#1f2937]">
         <div className="flex flex-col items-center gap-3">
@@ -103,5 +105,6 @@ export default function SigninForm() {
         </p>
       </div>
     </div>
+    </>
   );
 }

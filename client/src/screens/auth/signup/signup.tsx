@@ -1,6 +1,6 @@
 "use client";
 
-import { FormButton, PasswordInput, TextInput } from "@/components"; // Assuming these components exist
+import { FormButton, Navbar, PasswordInput, TextInput } from "@/components"; // Assuming these components exist
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { HiMail, HiUser, HiUserAdd } from "react-icons/hi";
@@ -51,6 +51,8 @@ export default function SignupForm() {
   };
 
   return (
+    <>
+     <Navbar />
     <div className="min-h-screen flex items-center justify-center bg-[#0d1117] px-4">
       <div className="w-full flex flex-col gap-7  max-w-lg bg-[#111827] p-8 rounded-2xl shadow-lg border border-[#1f2937]">
         <div className="flex flex-col items-center gap-3">
@@ -124,5 +126,6 @@ export default function SignupForm() {
         </p>
       </div>
     </div>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { Button, Footer } from "@/components";
+import { Button, Footer, Navbar } from "@/components";
 import { Features } from "@/data/feature";
 import { BiPlus, BiUser } from "react-icons/bi";
 import { FaCheckCircle } from "react-icons/fa";
@@ -23,6 +23,7 @@ const features = [
 const HomeScreen = () => {
   return (
     <>
+     <Navbar />
       <section
         className="relative bg-cover bg-center bg-no-repeat py-16 px-6"
         style={{
