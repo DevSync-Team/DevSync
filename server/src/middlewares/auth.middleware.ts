@@ -1,13 +1,16 @@
-// src/middlewares/auth.middleware.ts (Revised with Logs)
+// src/middlewares/auth.middleware.ts (Corrected)
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 //  import User from "../models/user.model.s"; // Optional import if checking user existence
+// NOTE: The previous error was caused by trying to import 'JwtPayload' from 'jsonwebtoken' here.
+// The manual interface definition below is sufficient.
 
 // Extend the Request type in Express to include the userId property
 interface AuthenticatedRequest extends Request {
     userId?: string;
 }
 
+// Manual definition of the payload structure expected from your JWT
 interface JwtPayload {
     userId: string;
 }
@@ -39,6 +42,7 @@ export const protect = async (req: AuthenticatedRequest, res: Response, next: Ne
   try {
     // 3. Verify token
     const secret = process.env.JWT_SECRET || "secret";
+    // Using your manually defined JwtPayload interface here
     const decoded = jwt.verify(token, secret) as JwtPayload;
 
     console.log("JWT Decoded Payload:", decoded);
