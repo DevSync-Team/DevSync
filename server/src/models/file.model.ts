@@ -2,9 +2,9 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IFile extends Document {
   session_id: mongoose.Types.ObjectId;
-  parent_id?: mongoose.Types.ObjectId;
+  parent_id?: mongoose.Types.ObjectId; // Optional: Retained but ignored for flat structure
   name: string;
-  type: "file" | "folder";
+  type: "file" | "folder"; // Will be enforced as "file" in the service/controller
   content?: string;
   language?: string;
   is_open: boolean;
