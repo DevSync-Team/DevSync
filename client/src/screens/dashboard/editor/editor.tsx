@@ -21,6 +21,7 @@ import SaveSnapshotModal from "./modals/SaveSnapshotModal";
 import InviteCollaboratorModal from "./modals/InviteCollaboratorModal";
 import SessionMembersModal from "./modals/SessionMembersModal";
 import { Member } from "./interface/interface";
+import ShareSessionModal from "./modals/SessionModal";
 
 export default function DevSyncEditor() {
   // --- Modals ---
@@ -28,6 +29,7 @@ export default function DevSyncEditor() {
   const [snapshotOpen, setSnapshotOpen] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+    const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // --- Toggle Panels ---
   const [showFiles, setShowFiles] = useState(true);
@@ -65,11 +67,11 @@ export default function DevSyncEditor() {
 
   const remove = (id: string) =>
     setMembers((m) => m.filter((x) => x.id !== id));
-  const [code, setCode] =
-    useState(`// Welcome to DevSync - Collaborative Coding Platform
-// Start coding together with your team!
+ const [code, setCode] =
+  useState(`// Welcome to DevSync - Collaborative Coding Platform
+Start coding together with your team!
 
-function calculateSum(a, b) {
+function calculateSum(a, b {
   return a + b;
 }
 
@@ -78,11 +80,12 @@ function greetUser(name) {
 }
 
 // Example usage
-const result = calculateSum(5, 3);
-greetUser("Developer");
+const result = calculateSum(5, 3;
+greetUser("Developer);
 
 console.log("Result:", result);
 console.log("DevSync is ready for collaboration!");`);
+
 
   const [output, setOutput] = useState("");
   const [activeUsers] = useState([
@@ -125,75 +128,77 @@ console.log("DevSync is ready for collaboration!");`);
   return (
     <div className="flex flex-col h-screen bg-[#111827] text-gray-100 font-sans">
       {/* Top Navigation Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#111827] border-b border-[#3e3e42]">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2 bg-[#111827] border-b border-[#3e3e42]">
+        <div className="flex items-center justify-between sm:justify-start gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
-              <FileCode className="w-5 h-5" />
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 rounded flex items-center justify-center">
+              <FileCode className="w-3 h-3 sm:w-5 sm:h-5" />
             </div>
-            <span className="text-xl font-semibold">DevSync</span>
+            <span className="text-lg sm:text-xl font-semibold">DevSync</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-400">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 sm:block">
             <span>Session:</span>
-            <button className="flex items-center gap-1 px-2 py-1 hover:bg-[#2d2d30] rounded">
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
+            <button   onClick={() => setShareModalOpen(true)} className="flex items-center gap-1 px-2 py-1 hover:bg-[#2d2d30] rounded">
+              <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Share</span>
             </button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="px-4 py-1.5 text-sm hover:bg-[#2d2d30] rounded">
+        <div className="flex items-center justify-end gap-2 sm:gap-3">
+          <button className="px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm hover:bg-[#2d2d30] rounded">
             Sign In
           </button>
-          <button className="px-4 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 rounded font-medium">
+          <button className="px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm bg-blue-500 hover:bg-blue-600 rounded font-medium">
             Get Started
           </button>
         </div>
       </div>
 
       {/* Main Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#232c3e] border-b border-[#3e3e42]">
-        <div className="flex items-center gap-2">
-          <select title="languageoptions" className="px-3 py-1.5  rounded text-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2 bg-[#232c3e] border-b border-[#3e3e42]">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+          <select title="languageoptions" className="px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm">
             <option>JavaScript</option>
           </select>
 
           <Button
             text="Run Code"
             onClick={handleRunCode}
-            icon={<Play size={18} />}
-            className="text-sm"
+            icon={<Play size={16} />}
+            className="text-xs sm:text-sm"
           />
           <button
             onClick={() => setSnapshotOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5  rounded text-sm"
+            className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm"
           >
-            <Save className="w-4 h-4" />
-            Save Snapshot
+            <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Save Snapshot</span>
+            <span className="xs:hidden">Save</span>
           </button>
           <button
             onClick={() => setHistoryOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5  rounded text-sm"
+            className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm"
           >
-            <Clock className="w-4 h-4" />
-            History (1)
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">History (1)</span>
+            <span className="xs:hidden">History</span>
           </button>
-          <button className="flex items-center gap-2 px-3 py-1.5  rounded text-sm">
-            <FileUp className="w-4 h-4" />
-            Export
+          <button className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm">
+            <FileUp className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Export</span>
           </button>
-          <button className="flex items-center gap-2 px-3 py-1.5  rounded text-sm">
-            <Download className="w-4 h-4" />
-            Download
+          <button className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm">
+            <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Download</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex -space-x-2">
+        <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2">
+          <div className="flex -space-x-1 sm:-space-x-2">
             {activeUsers.map((user) => (
               <div
                 key={user.id}
-                className={`w-8 h-8 ${user.color} rounded-full border-2  flex items-center justify-center text-sm font-medium`}
+                className={`w-6 h-6 sm:w-8 sm:h-8 ${user.color} rounded-full border-2 border-[#111827] flex items-center justify-center text-xs sm:text-sm font-medium`}
               >
                 {user.name}
               </div>
@@ -201,50 +206,44 @@ console.log("DevSync is ready for collaboration!");`);
           </div>
           <button
             onClick={() => setShowSessionModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm"
+            className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm"
           >
-            <Users className="w-4 h-4" />
-            {members.length}
+            <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">{members.length}</span>
           </button>
           <button
             onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 rounded text-sm font-medium"
+            className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-500 hover:bg-blue-600 rounded text-xs sm:text-sm font-medium"
           >
-            <UserPlus className="w-4 h-4" />
-            Invite
+            <UserPlus className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Invite</span>
           </button>
-          <button className="flex items-center gap-1 px-3 py-1.5  rounded text-sm">
-            <Share2 className="w-4 h-4" />
-            Share
+          <button className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm">
+            <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Share</span>
           </button>
           <button
             onClick={() => setShowFiles((prev) => !prev)}
-            className="px-3 py-1.5 bg-transparent border border-[#3e3e42] rounded text-sm"
+            className="px-2 py-1 sm:px-3 sm:py-1.5 bg-transparent border border-[#3e3e42] rounded text-xs sm:text-sm"
           >
-            Files
+            <span className="hidden sm:inline">Files</span>
+            <span className="sm:hidden">F</span>
           </button>
           <button
             onClick={() => setShowChat((prev) => !prev)}
-            className="px-3 py-1.5 bg-transparent ] border border-[#3e3e42] rounded text-sm"
+            className="px-2 py-1 sm:px-3 sm:py-1.5 bg-transparent border border-[#3e3e42] rounded text-xs sm:text-sm"
           >
-            Chat
-          </button>
-
-          <button className="p-1.5 hover:bg-[#2d2d30] rounded">
-            <Minus className="w-4 h-4" />
-          </button>
-          <span className="text-sm text-gray-400">14</span>
-          <button className="p-1.5 hover:bg-[#2d2d30] rounded">
-            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Chat</span>
+            <span className="sm:hidden">C</span>
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col lg:flex-row overflow-hidden">
         {/* Sidebar */}
         {showFiles && (
-          <div className="w-56 bg-[#232c3e] border-r border-[#3e3e42]">
+          <div className="w-full lg:w-56 bg-[#232c3e] border-b lg:border-b-0 lg:border-r border-[#3e3e42]">
             <div className="p-2">
               <div className="flex items-center justify-between px-2 py-1 bg-[#37373d] rounded">
                 <span className="text-sm">main.js</span>
@@ -255,22 +254,26 @@ console.log("DevSync is ready for collaboration!");`);
         )}
 
         {/* Editor */}
-        <div className="flex-1 flex flex-col">
-          <CodeEditor code={code} setCode={setCode} />
+        <div className="flex-1 flex flex-col min-h-0">
+          <CodeEditor code={code} setCode={setCode} language="js" />
 
           {/* Output Console */}
-          <div className="h-48 bg-[#1e1e2e] border-t border-[#313244]">
-            <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-[#313244]">
+          <div className="h-32 sm:h-48 bg-[#1e1e2e] border-t border-[#313244]">
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#252526] border-b border-[#313244]">
               <span className="text-sm">Output Console</span>
             </div>
-            <div className="p-4 font-mono text-sm text-gray-300 whitespace-pre-wrap">
+            <div className="p-3 sm:p-4 font-mono text-xs sm:text-sm text-gray-300 whitespace-pre-wrap overflow-auto">
               {output || "Click 'Run Code' to see output here..."}
             </div>
           </div>
         </div>
 
         {/* Chat Sidebar */}
-        {showChat && <ChatSidebar chatMessages={chatMessages} />}
+        {showChat && (
+          <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-[#3e3e42]">
+            <ChatSidebar chatMessages={chatMessages} />
+          </div>
+        )}
       </div>
 
       <VersionHistoryModal
@@ -301,6 +304,11 @@ console.log("DevSync is ready for collaboration!");`);
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         onInvite={(email, role) => alert(`Invited ${email} as ${role}`)}
+      />
+        <ShareSessionModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        sessionUrl="https://readdy.link/editor/r6t1l6e3b3k"
       />
     </div>
   );

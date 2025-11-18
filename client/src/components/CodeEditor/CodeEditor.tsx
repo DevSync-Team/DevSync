@@ -1,40 +1,67 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
+import CodeBlock from "../CodeBlock/CodeBlock";
 
 interface CodeEditorProps {
   code: string;
   setCode: (value: string) => void;
+  language?: string;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ code, setCode }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({
+  code,
+  setCode,
+  language = "js",
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
+
+  // Sync scroll between textarea and highlight block
+  const syncScroll = () => {
+    if (scrollRef.current && highlightRef.current) {
+      highlightRef.current.scrollTop = scrollRef.current.scrollTop;
+      highlightRef.current.scrollLeft = scrollRef.current.scrollLeft;
+    }
+  };
+
+  // Resize textarea height automatically (optional)
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [code]);
+
   return (
-    <div className="flex-1 relative bg-[#1e1e2e] text-gray-100">
-      {/* Scrollable Editor */}
-      <div className="h-full overflow-y-auto">
-        <textarea
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          className="w-full min-h-full p-4 bg-transparent font-mono text-sm resize-none focus:outline-none"
-          style={{
-            tabSize: 2,
-            lineHeight: "1.6",
-            caretColor: "#fff",
-          }}
-          spellCheck="false"
-        />
+    <div className="relative flex-1 bg-[#1e1e2e] text-gray-100 font-mono overflow-hidden rounded-md">
+      {/* Highlighted code layer */}
+      <div
+        ref={highlightRef}
+        className="absolute inset-0 p-4 overflow-auto pointer-events-none whitespace-pre-wrap"
+        style={{ lineHeight: "1.6", tabSize: 2 }}
+      >
+        <CodeBlock code={code || " "} language={language} />
       </div>
 
-      {/* Bottom Status Bar */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-[#181825] border-t border-[#313244] flex items-center justify-between text-xs text-gray-400">
-        <span>Line 9, Column 54</span>
-        <span className="text-gray-300">JAVASCRIPT</span>
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            2 active
-          </span>
-        </div>
+      {/* Editable textarea layer */}
+      <div
+        ref={scrollRef}
+        onScroll={syncScroll}
+        className="absolute inset-0 overflow-auto"
+      >
+        <textarea
+          title="Editor"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          spellCheck={false}
+          className="w-full h-full p-4 font-mono text-sm bg-transparent resize-none focus:outline-none text-transparent caret-white"
+          style={{
+            lineHeight: "1.6",
+            tabSize: 2,
+            whiteSpace: "pre",
+            outline: "none",
+          }}
+        />
       </div>
     </div>
   );
