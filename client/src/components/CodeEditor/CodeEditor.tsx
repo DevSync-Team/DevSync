@@ -33,7 +33,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   }, [code]);
 
   return (
-    <div className="relative flex-1 bg-[#1e1e2e] text-gray-100 font-mono overflow-hidden rounded-md">
+    <div className="relative flex-1 bg-[#111827] text-gray-100 font-mono overflow-hidden rounded-md">
       {/* Highlighted code layer */}
       <div
         ref={highlightRef}

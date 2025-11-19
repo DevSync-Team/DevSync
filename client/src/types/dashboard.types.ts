@@ -14,6 +14,7 @@ export type SessionStatus = "Live" | "Open" | "Closed" | "Ended";
 
 // Type for individual session
 export type Session = {
+  id:string;
   name: string;
   language: string;
   collaborators: number;

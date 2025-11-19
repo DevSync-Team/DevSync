@@ -42,7 +42,7 @@ const Navbar = () => {
 
             {/* Get Started Button */}
             <Link
-              href="/get-started"
+              href="/signin"
               className="bg-linear-to-r from-blue-500  to-cyan-400 text-white px-4 py-2 rounded-md text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all shadow-sm hover:shadow-md"
             >
               Get Started

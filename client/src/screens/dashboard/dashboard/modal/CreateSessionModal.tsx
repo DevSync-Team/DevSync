@@ -24,7 +24,12 @@ export default function CreateSessionModal({
 
   const handleCreate = () => {
     if (!sessionName || !selectedLang) return;
-    onCreate({ name: sessionName, language: selectedLang });
+
+    onCreate({
+      name: sessionName,
+      language: selectedLang,
+    });
+
     setSessionName("");
     setSelectedLang(null);
     onClose();
@@ -32,22 +37,15 @@ export default function CreateSessionModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className=" flex flex-col gap-5 bg-[#121a25] border border-[#1f2937] rounded-2xl w-[90%] sm:w-[450px] p-6 shadow-xl relative">
+      <div className="flex flex-col gap-5 bg-[#121a25] border border-[#1f2937] rounded-2xl w-[90%] sm:w-[450px] p-6 shadow-xl relative">
+
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-white">
-            Create New Session
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 text-xl"
-          >
-            ✕
-          </button>
+          <h2 className="text-xl font-semibold text-white">Create New Session</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-200 text-xl">✕</button>
         </div>
 
-        {/* Session name input */}
-
+        {/* Name input */}
         <TextInput
           label="Session Name"
           placeholder="Enter session name"
@@ -58,6 +56,7 @@ export default function CreateSessionModal({
         {/* Language selection */}
         <div className="flex flex-col gap-3">
           <p className="text-gray-300 text-sm">Programming Language</p>
+
           <div className="grid grid-cols-2 gap-3">
             {languages.map((lang) => (
               <button
@@ -70,8 +69,7 @@ export default function CreateSessionModal({
                       : "bg-[#242e46] text-gray-300 border-[#1f2937] hover:bg-[#232938]"
                   }`}
               >
-                <FaCode className="text-sm" />
-                {lang}
+                <FaCode className="text-sm" /> {lang}
               </button>
             ))}
           </div>
@@ -79,7 +77,7 @@ export default function CreateSessionModal({
 
         {/* Actions */}
         <div className="mt-6 flex justify-end gap-3">
-            <Button text="Cancel" outline color="text-white" onClick={onClose}/>
+          <Button text="Cancel" outline color="text-white" onClick={onClose} />
 
           <button
             onClick={handleCreate}
@@ -87,7 +85,7 @@ export default function CreateSessionModal({
             className={`px-4 py-2 rounded-lg font-medium transition
               ${
                 sessionName && selectedLang
-                  ? "bg-gradient-to-r from-blue-600 to-cyan-500 hover:opacity-90 text-white"
+                  ? "bg-linear-to-r from-blue-600 to-cyan-500 hover:opacity-90 text-white"
                   : "bg-gray-700 text-gray-500 cursor-not-allowed"
               }`}
           >
