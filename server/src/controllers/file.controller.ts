@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 // src/controllers/file.controller.ts
 
-=======
->>>>>>> origin/ruth
 import type { Request, Response } from "express";
 import {
   createFileService,
@@ -12,11 +9,8 @@ import {
   deleteFileService,
   switchOpenFileService, 
 } from "../services/file.service.js";
-<<<<<<< HEAD
 import { broadcastFileSwitch } from '../socket/socket.handler.js'; // Assuming you expose this utility
 
-=======
->>>>>>> origin/ruth
 
 // Extend the Request type to include session ID and member role
 interface AuthenticatedRequest extends Request {
@@ -45,10 +39,7 @@ export const createFile = async (req: AuthenticatedRequest, res: Response) => {
   // We only expect 'name', 'content', and optionally 'language'
   const { name, type, content, language } = req.body; 
   const { sessionId, userId } = req;
-<<<<<<< HEAD
   const reqInstance = req as Request; // Used for logging activity
-=======
->>>>>>> origin/ruth
 
   // Enforce simplicity: block type: 'folder' and extraneous fields like parentId
   if (type !== 'file' || req.body.parentId !== undefined) {
