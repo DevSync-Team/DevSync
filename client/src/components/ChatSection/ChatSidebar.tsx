@@ -2,6 +2,16 @@
 import { ChatSidebarProps } from "@/types/chats.types";
 import React, { useState, useRef, useEffect } from "react";
 
+// Utility to generate a consistent color from a string
+const stringToColor = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = `hsl(${hash % 360}, 60%, 50%)`;
+  return color;
+};
+
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
   chatMessages,
   onSendMessage,
@@ -28,17 +38,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   };
 
-  const formatTime = () => {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
   return (
     <div className="w-full h-full bg-[#1c2536] border-l border-[#313244] flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-[#313244]">
         <p className="text-sm text-gray-300">
-          💬 <span className="text-blue-400 font-medium">Team Chat:</span>{" "}
+          <span className="text-blue-400 font-medium">Team Chat:</span>{" "}
           collaborate and share ideas here.
         </p>
       </div>
@@ -50,36 +55,52 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             No messages yet. Start the conversation!
           </div>
         ) : (
-          chatMessages.map((msg) => (
-            <div key={msg.id} className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-8 h-8 ${msg.avatar} rounded-full flex items-center justify-center text-sm font-medium text-white`}
-                >
-                  {msg.user[0]}
-                </div>
-                <span className="text-sm font-medium text-gray-200">
-                  {msg.user}
-                </span>
-                <span className="text-xs text-gray-500">{msg.time}</span>
-              </div>
-
-              {msg.isCode ? (
-                <div className="ml-10 p-3 bg-[#3b475d] rounded-lg border border-[#313244]">
-                  <div className="text-sm font-medium mb-2 text-blue-400">
-                    Code Snippet
+          chatMessages.map((msg) => {
+            const userColor = stringToColor(msg.user); // unique color for user
+            return (
+              <div key={msg.id} className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div
+                    style={{ backgroundColor: userColor }}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
+                  >
+                    {msg.user[0]}
                   </div>
-                  <pre className="text-xs font-mono text-gray-300 overflow-x-auto">
-                    {msg.message}
-                  </pre>
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: userColor }}
+                  >
+                    {msg.user}
+                  </span>
+                  <span className="text-xs text-gray-500">{msg.time}</span>
                 </div>
-              ) : (
-                <p className="ml-10 text-sm text-gray-300 leading-snug">
-                  {msg.message}
-                </p>
-              )}
-            </div>
-          ))
+
+                {msg.isCode ? (
+                  <div
+                    className="ml-10 p-3 rounded-lg border"
+                    style={{
+                      backgroundColor: `${userColor}20`, // light transparent bg
+                      borderColor: `${userColor}50`,
+                    }}
+                  >
+                    <div className="text-sm font-medium mb-2" style={{ color: userColor }}>
+                      Code Snippet
+                    </div>
+                    <pre className="text-xs font-mono text-gray-300 overflow-x-auto">
+                      {msg.message}
+                    </pre>
+                  </div>
+                ) : (
+                  <p
+                    className="ml-10 text-sm leading-snug"
+                    style={{ color: `${userColor}DD` }}
+                  >
+                    {msg.message}
+                  </p>
+                )}
+              </div>
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
