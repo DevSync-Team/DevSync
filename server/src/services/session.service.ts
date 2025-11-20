@@ -3,7 +3,11 @@ import Session from "../models/session.model.js";
 import type { ISession } from "../models/session.model.js";
 import SessionMember from "../models/sessionMember.model.js";
 import type { ISessionMember } from "../models/sessionMember.model.js";
+<<<<<<< HEAD
 import { logActivity } from './activity.service.js';
+=======
+
+>>>>>>> origin/ruth
 import File from "../models/file.model.js";
 import type { IFile } from "../models/file.model.js"; // FIXED: Use 'import type'
 import User from "../models/user.model.js"; // For existence check
@@ -192,6 +196,7 @@ export const deleteSessionService = async (
   } finally {
     sessionDB.endSession();
   }
+<<<<<<< HEAD
 };
 
 /**
@@ -308,4 +313,6 @@ export const removeMemberService = async (
   // NOTE: You'd also want to notify the kicked user via WebSockets here.
 
   return { message: "Member successfully removed from the session." };
+=======
+>>>>>>> origin/ruth
 };
