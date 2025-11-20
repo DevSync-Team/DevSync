@@ -6,7 +6,10 @@ import sessionRoutes from './routes/session.routes.js';
 import fileRoutes from './routes/file.routes.js';
 import executionRoutes from './routes/execution.route.js';
 import chatRoutes from './routes/chat.route.js';
- 
+import invitationRoutes from './routes/invitation.routes.js';
+import snapshotRoutes from './routes/snapshot.route.js'
+import memberRoutes from './routes/member.routes.js';
+import userRoutes from './routes/preference.routes.js';
 
 const app = express();
 
@@ -32,6 +35,14 @@ app.use('/api/sessions/:sessionId/execute', executionRoutes);
 // Integrate Chat History Routes (Phase 1b)
 // GET /api/sessions/:sessionId/chat/history
 app.use('/api/sessions/:sessionId/chat', chatRoutes);
+
+app.use('/api/invitations', invitationRoutes);
+
+app.use('/api/sessions/:sessionId/snapshots', snapshotRoutes);
+
+app.use('/api/sessions/:sessionId/members', memberRoutes);
+
+app.use('/api/users', userRoutes);
  
 // Swagger
 

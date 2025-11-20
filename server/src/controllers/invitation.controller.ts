@@ -1,67 +1,66 @@
 // src/controllers/invitation.controller.ts
 
-import type { Request, Response } from "express";
-import { createInvitation, acceptInvitation } from "../services/invitation.service.js";
+import type { Request, Response } from 'express';
+import { 
+    generateAndSendInvitationService, 
+    acceptInvitationService
+} from '../services/invitation.service.js';
+import { Role } from '../middlewares/session.middleware.js'; 
 
 interface AuthenticatedRequest extends Request {
-    userId?: string;
-    sessionId?: string; // May be set by session middleware
+    userId?: string; 
+    sessionId?: string; 
+    memberRole?: Role; 
+}
+
+const handleInvitationError = (res: Response, err: unknown) => {
+    const error = err as Error;
+    let status = 500;
+    
+    if (error.message.includes("not found") || error.message.includes("expired")) status = 404;
+    else if (error.message.includes("already a member")) status = 409; 
+    else if (error.message.includes("must be logged in as the invited user")) status = 403;
+
+    res.status(status).json({ message: error.message, error: error.name });
 }
 
 /**
- * POST /api/invitations/:sessionId
- * Summary: Creates a new invitation token for a session.
+ * POST /api/sessions/:sessionId/invitations
+ * Summary: Generates a token, saves the invite record, and sends the email. (Host/Editor Only)
  */
 export const generateInviteToken = async (req: AuthenticatedRequest, res: Response) => {
-    const { sessionId } = req.params;
-    const { userId } = req; // Extracted from JWT
+    const { email, role } = req.body;
+    const sessionId = req.params.sessionId; // Read from URL params
+    const inviterId = req.userId;
 
-    if (!userId || !sessionId) {
-        return res.status(400).json({ message: "Missing User ID or Session ID." });
+    if (!sessionId || !inviterId || !email || !['editor', 'viewer'].includes(role)) {
+        return res.status(400).json({ message: "Missing required fields (sessionId, email, role)." });
     }
 
     try {
-        // NOTE: Role check (only Host/Editor can invite) should be handled by a middleware
-        const token = await createInvitation(sessionId, userId);
-        
-        // Return the full link (replace CLIENT_BASE_URL with your frontend URL)
-        const clientBaseUrl = process.env.CLIENT_BASE_URL || 'http://localhost:3000';
-        const inviteLink = `${clientBaseUrl}/invite/${token}`;
-
-        res.status(201).json({ 
-            message: "Invitation token created successfully.", 
-            token,
-            inviteLink
-        });
+        const result = await generateAndSendInvitationService(sessionId, inviterId, email, role);
+        res.status(200).json(result);
     } catch (err) {
-        res.status(400).json({ message: (err as Error).message });
+        handleInvitationError(res, err);
     }
 };
 
 /**
  * POST /api/invitations/:token/accept
- * Summary: Accepts an invitation token, adds the user to the session, and redirects/returns session ID.
+ * Summary: Handles the user clicking the link and accepting the invitation. (Requires Login)
  */
 export const handleAcceptInvitation = async (req: AuthenticatedRequest, res: Response) => {
     const { token } = req.params;
-    const { userId } = req; // Extracted from JWT
+    const userId = req.userId;
 
-    if (!userId || !token) {
-        return res.status(400).json({ message: "Missing User ID or invitation token." });
+    if (!token || !userId) {
+        return res.status(400).json({ message: "Missing token or user ID." });
     }
 
     try {
-        const sessionId = await acceptInvitation(token, userId);
-        
-        res.status(200).json({ 
-            message: "Invitation accepted. User added to session.", 
-            sessionId
-        });
-        
-        // In a real application, you might redirect the user to the session workspace:
-        // res.redirect(`/app/sessions/${sessionId}`);
-
+        const sessionId = await acceptInvitationService(token, userId);
+        res.status(200).json({ message: "Invitation accepted. You are now a session member.", sessionId });
     } catch (err) {
-        res.status(400).json({ message: (err as Error).message });
+        handleInvitationError(res, err);
     }
 };

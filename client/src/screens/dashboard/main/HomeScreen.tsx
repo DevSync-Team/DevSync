@@ -1,4 +1,4 @@
-import { Button } from "@/components";
+import { Button, Footer, Navbar } from "@/components";
 import { Features } from "@/data/feature";
 import { BiPlus, BiUser } from "react-icons/bi";
 import { FaCheckCircle } from "react-icons/fa";
@@ -23,6 +23,7 @@ const features = [
 const HomeScreen = () => {
   return (
     <>
+     <Navbar />
       <section
         className="relative bg-cover bg-center bg-no-repeat py-16 px-6"
         style={{
@@ -101,81 +102,81 @@ const HomeScreen = () => {
           </div>
         </div>
       </section>
-      
-          {/* Title and Subtitle */}
-          <div className="flex flex-col gap-8 bg-[#0F172A] justify-center align-middle items-center py-20">
-            <div className=" flex flex-col gap-2 text-center">
-              <h2 className="text-4xl font-bold text-white">
-                Everything You Need for Collaborative Development
-              </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                DevSync provides a complete development environment with
-                advanced features designed for modern teams.
-              </p>
-            </div>
 
-            {/* Two-column layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              {/* Left side: feature list */}
-              <div className="flex flex-col gap-6">
-                {features.map((item, index) => (
-                  <div key={index} className="flex items-start gap-4">
-                    <FaCheckCircle className="text-blue-500 text-xl mt-1" />
-                    <div className="flex flex-col gap-1.5">
-                      <h3 className="font-semibold text-lg text-white">{item.title}</h3>
-                      <p className="text-gray-400 text-sm">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* Title and Subtitle */}
+      <div className="flex flex-col gap-8 bg-[#0F172A] justify-center align-middle items-center py-20">
+        <div className=" flex flex-col gap-2 text-center">
+          <h2 className="text-4xl font-bold text-white">
+            Everything You Need for Collaborative Development
+          </h2>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            DevSync provides a complete development environment with advanced
+            features designed for modern teams.
+          </p>
+        </div>
 
-              {/* Right side: code block mockup */}
-              <div className="bg-[#1E293B] rounded-xl p-6 font-mono text-sm shadow-lg">
-                <div className="flex gap-2 mb-3">
-                  <span className="w-3 h-3 bg-red-500 rounded-full" />
-                  <span className="w-3 h-3 bg-yellow-500 rounded-full" />
-                  <span className="w-3 h-3 bg-green-500 rounded-full" />
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* Left side: feature list */}
+          <div className="flex flex-col gap-6">
+            {features.map((item, index) => (
+              <div key={index} className="flex items-start gap-4">
+                <FaCheckCircle className="text-blue-500 text-xl mt-1" />
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="font-semibold text-lg text-white">
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-400 text-sm">{item.description}</p>
                 </div>
-                <pre className="text-gray-300">
-                  <code>
-                    {`// main.js
+              </div>
+            ))}
+          </div>
+
+          {/* Right side: code block mockup */}
+          <div className="bg-[#1E293B] rounded-xl p-6 font-mono text-sm shadow-lg">
+            <div className="flex gap-2 mb-3">
+              <span className="w-3 h-3 bg-red-500 rounded-full" />
+              <span className="w-3 h-3 bg-yellow-500 rounded-full" />
+              <span className="w-3 h-3 bg-green-500 rounded-full" />
+            </div>
+            <pre className="text-gray-300">
+              <code>
+                {`// main.js
 function calculateSum(a, b) {
   return a + b;
 }
 
 // Real-time collaboration active
 console.log("Hello DevSync!");`}
-                  </code>
-                </pre>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA Section */}
-        
-        <div className=" flex flex-col gap-4 justify-center items-center bg-[#090e1afd] py-14 text-white">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold mb-3">
-              Ready to Transform Your Development Workflow?
-            </h3>
-            <p className="text-gray-400 mb-8">
-              Join thousands of developers who are already collaborating more
-              effectively with DevSync.
-            </p>
-
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button
-                text="Start Free Session"
-                backgroundColor=" bg-linear-to-r from-blue-500  to-cyan-400"
-                color="text-white"
-              />
-              <Button text="Create Account" outline />
-            </div>
+              </code>
+            </pre>
           </div>
         </div>
+      </div>
 
+      {/* CTA Section */}
+
+      <div className=" flex flex-col gap-4 justify-center items-center bg-[#090e1afd] py-14 text-white">
+        <div className="text-center">
+          <h3 className="text-2xl font-bold mb-3">
+            Ready to Transform Your Development Workflow?
+          </h3>
+          <p className="text-gray-400 mb-8">
+            Join thousands of developers who are already collaborating more
+            effectively with DevSync.
+          </p>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button
+              text="Start Free Session"
+              backgroundColor=" bg-linear-to-r from-blue-500  to-cyan-400"
+              color="text-white"
+            />
+            <Button text="Create Account" outline />
+          </div>
+        </div>
+      </div>
+      <Footer />
     </>
   );
 };

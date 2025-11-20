@@ -1,9 +1,12 @@
+// src/socket/socket.handler.ts
+
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import SessionMember from '../models/sessionMember.model.js';
 import UserCursor from '../models/userCursor.model.js';
 import UserSelection from '../models/userSelection.model.js';
 import ChatMessage from '../models/chatMessage.model.js';
+import File from '../models/file.model.js'; // <-- NEW IMPORT: Required for file content sync
 import mongoose from 'mongoose';
 
 
@@ -57,10 +60,8 @@ export const initializeSocketIO = (io: Server) => {
     io.use((socket, next) => {
         // --- OUTER TRY/CATCH TO CATCH SYNCHRONOUS CRASHES ---
         try {
-            // Token can be from auth header (auth.token) or query param (query.token)
             const tokenRaw = socket.handshake.auth.token || socket.handshake.query.token;
             
-            // Normalize token (handle array/string/undefined cases from query)
             let token: string | undefined;
             if (Array.isArray(tokenRaw)) {
                 token = tokenRaw[0];
@@ -76,8 +77,6 @@ export const initializeSocketIO = (io: Server) => {
             // --- INNER TRY/CATCH FOR JWT VERIFICATION ---
             try {
                 const secret = process.env.JWT_SECRET || "secret";
-                
-                // Ensure token is trimmed of potential whitespace
                 const trimmedToken = token.trim();
 
                 const decoded = jwt.verify(trimmedToken, secret) as AuthPayload; 
@@ -88,14 +87,12 @@ export const initializeSocketIO = (io: Server) => {
                 next();
                 
             } catch (err) {
-                // LOG: The JWT error (e.g., JsonWebTokenError: invalid signature)
                 console.error('Socket Auth Failed: JWT Verification Failed.', err);
                 next(new Error('Authentication error: Invalid token')); 
             }
             // --- END INNER TRY/CATCH ---
             
         } catch (err) {
-            // LOG: The emergency synchronous crash log
             console.error('FATAL SYNCHRONOUS ERROR in Socket Middleware:', err);
             next(new Error('Internal server error during authentication.'));
         }
@@ -122,8 +119,64 @@ export const initializeSocketIO = (io: Server) => {
                 // 2. Join a dedicated room for the session
                 socket.join(sessionId);
                 console.log(`User ${userId} successfully joined room ${sessionId}`);
+                
+                
+                // =========================================================
+                //  PHASE 2.1: INITIAL STATE SYNCHRONIZATION 🚀
+                // =========================================================
 
-                // 3. Broadcast presence to the session
+                // A. Get current open file content for the joining user
+                const currentFile = await File.findOne({ 
+                    session_id: sessionObjectId, 
+                    is_open: true 
+                }).lean();
+                
+                if (currentFile) {
+                    // Send the initial file ID and content ONLY to the joining user
+                    socket.emit('initial:file', {
+                        fileId: currentFile._id.toString(),
+                        content: currentFile.content || '',
+                        language: currentFile.language
+                    });
+                }
+
+
+                // B. Get presence (cursors and selections) for ALL other members
+                
+                // Cursors (excluding the current user)
+                const initialCursors = await UserCursor.find({
+                    session_id: sessionObjectId,
+                    user_id: { $ne: userId } 
+                })
+                .populate({
+                    path: 'user_id',
+                    select: 'full_name avatar_url' 
+                })
+                .lean();
+
+                // Selections (excluding the current user)
+                const initialSelections = await UserSelection.find({
+                    session_id: sessionObjectId,
+                    user_id: { $ne: userId } 
+                })
+                .populate({
+                    path: 'user_id',
+                    select: 'full_name avatar_url'
+                })
+                .lean();
+
+                // Send initial presence data ONLY to the joining user
+                socket.emit('initial:presence', {
+                    cursors: initialCursors,
+                    selections: initialSelections,
+                });
+
+                // =========================================================
+                //  END INITIAL STATE SYNCHRONIZATION
+                // =========================================================
+
+
+                // 3. Broadcast presence to the session (AFTER sync is sent)
                 socket.to(sessionId).emit('memberJoined', { userId: userId, socketId: socket.id });
 
             } catch (error) {
@@ -204,5 +257,15 @@ export const initializeSocketIO = (io: Server) => {
                 socket.to(sessionId).emit('memberLeft', { userId: userId });
             });
         });
+    });
+};
+
+export const broadcastFileSwitch = (sessionId: string, newFileId: string, userId: string) => {
+    if (!socketIO) return console.error("SocketIO not initialized for broadcasting.");
+
+    // Notify everyone in the session about the new file being opened
+    socketIO.to(sessionId).emit('file:switched', { 
+        newFileId: newFileId,
+        userId: userId // The user who initiated the switch
     });
 };

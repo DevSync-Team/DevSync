@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import File from "../models/file.model.js";
 import type { IFile } from "../models/file.model.js";
+import { logActivity } from './activity.service.js';
+import type { Request } from 'express'; 
+import UserCursor from '../models/userCursor.model.js';
+import UserSelection from '../models/userSelection.model.js';
 
 /**
  * 1. CREATE FILE (SIMPLIFIED - NO PARENT ID VALIDATION)
@@ -11,7 +15,8 @@ export const createFileService = async (
   userId: string,
   name: string,
   content: string = '',
-  language?: string
+  language?: string,
+  req?: Request
 ): Promise<IFile> => {
     
   // Check for duplicate file names within the session (only among other files)
@@ -36,6 +41,7 @@ export const createFileService = async (
     is_open: false, // Must be false upon creation
     created_by: userId,
   });
+  logActivity(sessionId, userId, "FILE_CREATED", { fileId: newItem._id, name: newItem.name }, req);
 
   return newItem;
 };
@@ -76,7 +82,8 @@ export const readFileContentService = async (fileId: string, sessionId: string):
 export const updateFileService = async (
   fileId: string,
   sessionId: string,
-  updateFields: { content?: string; name?: string; language?: string }
+  updateFields: { content?: string; name?: string; language?: string, userId: string, // <--- ADD userId here
+  req?: Request }
 ): Promise<IFile> => {
   const file = await File.findOne({ _id: fileId, session_id: sessionId, type: 'file' });
 
@@ -105,13 +112,30 @@ export const updateFileService = async (
   Object.assign(file, allowedUpdates);
   await file.save();
 
+  let actionType = '';
+  let details: any = { fileId: file._id, name: file.name };
+
+  if (isContentChange && isMetadataChange) {
+      actionType = "FILE_CONTENT_AND_METADATA_UPDATED";
+  } else if (isContentChange) {
+      actionType = "FILE_CONTENT_UPDATED";
+      details.contentLength = updateFields.content!.length;
+  } else if (isMetadataChange) {
+      actionType = "FILE_METADATA_UPDATED";
+  }
+  
+  if (actionType) {
+      logActivity(sessionId, userId, actionType, details, req);
+  }
+
   return file;
 };
 
 /**
  * 5. DELETE FILE (SIMPLE DELETE)
  */
-export const deleteFileService = async (fileId: string, sessionId: string): Promise<{ message: string }> => {
+export const deleteFileService = async (fileId: string, sessionId: string,userId: string, // <--- ADD userId here
+  req?: Request): Promise<{ message: string }> => {
     const file = await File.findOne({ _id: fileId, session_id: sessionId, type: 'file' });
 
     if (!file) {
@@ -124,58 +148,67 @@ export const deleteFileService = async (fileId: string, sessionId: string): Prom
     if (result.deletedCount === 0) {
         throw new Error("File not found during deletion.");
     }
+
+    logActivity(sessionId, userId, "FILE_DELETED", { fileId: fileId, name: file.name }, req);
     
     return { message: `File ${file.name} deleted successfully.` };
 };
-
 /**
- * 6. SWITCH OPEN FILE STATE (CRITICAL LOGIC)
+ * 6. SWITCH OPEN FILE (ATOMIC TRANSACTION)
+ * Atomically sets the old file to is_open: false and the new file to is_open: true.
+ * Also clears the user's presence data (cursors/selections) from the old file.
  */
 export const switchOpenFileService = async (
+  sessionId: string,
   newFileId: string,
-  sessionId: string
-): Promise<{ opened: IFile; closed: IFile | null }> => {
-    
+  oldFileId: string,
+  userId: string,
+  req?: Request
+): Promise<IFile> => {
   const sessionDB = await mongoose.startSession();
   sessionDB.startTransaction();
-  
-  let openedFile: IFile | null = null;
-  let closedFile: IFile | null = null;
 
   try {
-    // 1. Find the currently open file (excluding the new target) and set its state to closed
-    closedFile = await File.findOneAndUpdate(
-      { 
-        session_id: sessionId, 
-        is_open: true,
-        _id: { $ne: newFileId } 
-      },
-      { is_open: false },
-      { new: true, session: sessionDB }
-    );
-    
-    // 2. Open the new target file (is_open: true)
-    openedFile = await File.findOneAndUpdate(
-      { 
-        _id: newFileId, 
-        session_id: sessionId,
-        type: 'file' 
-      },
-      { is_open: true },
+    const sessionObjectId = new mongoose.Types.ObjectId(sessionId);
+
+    // 1. Set the new file as open and retrieve its content
+    const newFile = await File.findOneAndUpdate(
+      { _id: newFileId, session_id: sessionObjectId },
+      { $set: { is_open: true } },
       { new: true, session: sessionDB }
     );
 
-    if (!openedFile) {
-        throw new Error("Target file not found or is not a file.");
+    if (!newFile) {
+      throw new Error("New file not found or does not belong to this session.");
+    }
+
+    // 2. Set the old file as closed
+    if (oldFileId && oldFileId !== newFileId) {
+      await File.updateOne(
+        { _id: oldFileId, session_id: sessionObjectId },
+        { $set: { is_open: false } },
+        { session: sessionDB }
+      );
+      
+      // 3. Wipe the user's old presence data for the session/old file
+      await Promise.all([
+        UserCursor.deleteOne({ user_id: userId, file_id: oldFileId, session_id: sessionId }, { session: sessionDB }),
+        UserSelection.deleteOne({ user_id: userId, file_id: oldFileId, session_id: sessionId }, { session: sessionDB }),
+      ]);
     }
     
+    // 4. Log the activity
+    logActivity(sessionId, userId, "FILE_SWITCHED", { 
+        oldFileId: oldFileId, 
+        newFileId: newFileId,
+        newFileName: newFile.name 
+    }, req);
+
     await sessionDB.commitTransaction();
-    
-    return { opened: openedFile, closed: closedFile };
-    
+    return newFile;
   } catch (error) {
     await sessionDB.abortTransaction();
-    throw new Error(`Failed to switch open file state: ${(error as Error).message}`);
+    throw error;
   } finally {
     sessionDB.endSession();
   }

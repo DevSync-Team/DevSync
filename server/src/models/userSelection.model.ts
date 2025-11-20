@@ -1,3 +1,5 @@
+// src/models/userSelection.model.ts
+
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUserSelection extends Document {
@@ -20,9 +22,15 @@ const userSelectionSchema = new Schema<IUserSelection>(
     start_column: { type: Number, required: true },
     end_line: { type: Number, required: true },
     end_column: { type: Number, required: true },
-    color: { type: String, default: "#10B981" },
+    color: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true } // includes updatedAt, which is good for fail-safe TTL
+);
+
+// Compound Index: Essential for fast retrieval and upserting presence data.
+userSelectionSchema.index(
+  { session_id: 1, file_id: 1, user_id: 1 },
+  { unique: true }
 );
 
 export default mongoose.model<IUserSelection>("UserSelection", userSelectionSchema);

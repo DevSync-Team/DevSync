@@ -1,3 +1,5 @@
+// src/models/chatMessage.model.ts
+
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IChatMessage extends Document {
@@ -18,7 +20,17 @@ const chatMessageSchema = new Schema<IChatMessage>(
       default: "text",
     },
   },
-  { timestamps: true }
+  { 
+    timestamps: true 
+  }
 );
+
+ 
+chatMessageSchema.index({ session_id: 1, createdAt: 1 });
+
+ 
+const ninetyDaysInSeconds = 60 * 60 * 24 * 90;
+chatMessageSchema.index({ createdAt: 1 }, { expireAfterSeconds: ninetyDaysInSeconds });
+
 
 export default mongoose.model<IChatMessage>("ChatMessage", chatMessageSchema);

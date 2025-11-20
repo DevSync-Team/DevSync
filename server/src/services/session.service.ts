@@ -3,7 +3,7 @@ import Session from "../models/session.model.js";
 import type { ISession } from "../models/session.model.js";
 import SessionMember from "../models/sessionMember.model.js";
 import type { ISessionMember } from "../models/sessionMember.model.js";
-
+import { logActivity } from './activity.service.js';
 import File from "../models/file.model.js";
 import type { IFile } from "../models/file.model.js"; // FIXED: Use 'import type'
 import User from "../models/user.model.js"; // For existence check
@@ -192,4 +192,120 @@ export const deleteSessionService = async (
   } finally {
     sessionDB.endSession();
   }
+};
+
+/**
+ * 6. LEAVE SESSION
+ * Allows a user to remove themselves from a session.
+ */
+export const leaveSessionService = async (
+  sessionId: string,
+  userId: string,
+  req?: Request
+): Promise<{ message: string }> => {
+  const result = await SessionMember.deleteOne({
+    session_id: sessionId,
+    user_id: userId,
+    role: { $ne: 'host' } // Prevent host from simply deleting their membership
+  });
+
+  if (result.deletedCount === 0) {
+    logActivity(sessionId, userId, "MEMBER_LEFT", { user: userId }, req);
+    // Check if the user is the host
+    const session = await Session.findById(sessionId);
+    if (session && session.host_user_id.toString() === userId) {
+        throw new Error("Host cannot leave the session. The host must delete the entire session.");
+    }
+    throw new Error("User is not a member of this session.");
+  }
+
+  // NOTE: In a production app, you might also update File.is_open=false for this user,
+  // delete their UserCursor/UserSelection records, and log the activity.
+
+  return { message: "Successfully left the session." };
+};
+
+/**
+ * 7. UPDATE MEMBER ROLE (Host Only)
+ * Allows the host to change the role of another member.
+ */
+export const updateMemberRoleService = async (
+  sessionId: string,
+  hostId: string,
+  memberId: string,
+  newRole: 'editor' | 'viewer',
+  req?: Request
+): Promise<ISessionMember> => {
+    
+  // 1. Verify Host Authorization
+  const hostMember = await SessionMember.findOne({ session_id: sessionId, user_id: hostId });
+  if (!hostMember || hostMember.role !== 'host') {
+    throw new Error("Not authorized: Only the session host can change member roles.");
+  }
+  
+  // 2. Prevent Host from modifying their own role or changing role to host
+  if (memberId === hostId) {
+    throw new Error("Cannot change the host's role.");
+  }
+
+  // 3. Find and update the target member
+  const updatedMember = await SessionMember.findOneAndUpdate(
+    { 
+      session_id: sessionId, 
+      user_id: memberId 
+    },
+    { role: newRole },
+    { new: true } // Return the updated document
+  ).populate({
+    path: 'user_id',
+    model: User,
+    select: 'full_name avatar_url'
+  });
+
+  if (!updatedMember) {
+    throw new Error("Member not found in this session.");
+  }
+  logActivity(sessionId, hostId, "MEMBER_ROLE_UPDATED", {
+      targetUserId: memberId, 
+      newRole: newRole 
+  }, req);
+
+  return updatedMember as ISessionMember;
+};
+
+
+/**
+ * 8. REMOVE MEMBER (Host Only - KICK)
+ * Allows the host to remove (kick) another member from the session.
+ */
+export const removeMemberService = async (
+  sessionId: string,
+  hostId: string,
+  memberId: string
+): Promise<{ message: string }> => {
+    
+  // 1. Verify Host Authorization
+  const hostMember = await SessionMember.findOne({ session_id: sessionId, user_id: hostId });
+  if (!hostMember || hostMember.role !== 'host') {
+    throw new Error("Not authorized: Only the session host can remove members.");
+  }
+
+  // 2. Prevent Host from removing themselves
+  if (memberId === hostId) {
+    throw new Error("Host cannot remove themselves from the session.");
+  }
+
+  // 3. Remove the target member
+  const result = await SessionMember.deleteOne({
+    session_id: sessionId,
+    user_id: memberId,
+  });
+
+  if (result.deletedCount === 0) {
+    throw new Error("Member not found in this session.");
+  }
+
+  // NOTE: You'd also want to notify the kicked user via WebSockets here.
+
+  return { message: "Member successfully removed from the session." };
 };

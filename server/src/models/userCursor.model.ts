@@ -1,3 +1,5 @@
+// src/models/userCursor.model.ts
+
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUserCursor extends Document {
@@ -21,6 +23,7 @@ const userCursorSchema = new Schema<IUserCursor>(
   { timestamps: true }
 );
 
+// Compound Index: Essential for fast retrieval and upserting presence data.
 userCursorSchema.index(
   { session_id: 1, user_id: 1, file_id: 1 },
   { unique: true }
