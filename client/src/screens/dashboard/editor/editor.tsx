@@ -40,7 +40,7 @@ export default function EditorScreen() {
   const [showChat, setShowChat] = useState(true);
 
   const { id } = useParams();
-  const session = sessions.find((s) => s.id === id);
+  const session = sessions.find((s) => s._id === id);
 
   if (!session) {
     return <div className="p-6">Session not found</div>;
@@ -152,7 +152,7 @@ function calculateSum(a, b {
             <span className="text-lg sm:text-xl font-semibold">DevSync</span>
           </Link>
           <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-400 ">
-            <div>Session:{session.id}</div>
+            <div>Session:{session._id}</div>
             <button
               onClick={() => setShareModalOpen(true)}
               className="flex items-center gap-1 px-2 py-1 hover:bg-[#2d2d30] rounded"
