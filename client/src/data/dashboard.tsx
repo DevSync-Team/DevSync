@@ -30,7 +30,7 @@ export const stats: StatItem[] = [
 ];
 export const sessions: Session[] = [
   {
-    id: "101",
+    _id: "101",
     name: "React Component Library",
     language: "Javascript",
     collaborators: 3,
@@ -38,7 +38,7 @@ export const sessions: Session[] = [
     status: "Live",
   },
   {
-    id: "102",
+    _id: "102",
     name: "API Backend Service",
     language: "Python",
     collaborators: 2,

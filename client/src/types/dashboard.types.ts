@@ -3,7 +3,7 @@ import { JSX, ReactNode } from "react";
 // Type for individual stat item
 export type StatItem = {
   label: string;
-  value: string;
+  value: number;
   icon: JSX.Element;
   iconColor?: string;
 };

@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components";
-import { stats } from "@/data/dashboard";
 import { useEffect, useState } from "react";
 import { BiPlus } from "react-icons/bi";
 import CreateSessionModal from "./modal/CreateSessionModal";
@@ -10,23 +9,30 @@ import Link from "next/link";
 import { Code } from "lucide-react";
 import { Session, DisplaySession } from "@/types/dashboard.types";
 import api from "@/utils/api";
+import StatsGrid from "@/components/StatsCard/StatsCard";
+import { FaClock, FaCode, FaUsers } from "react-icons/fa";
+import { MdOutlinePlayCircle } from "react-icons/md";
 
 // Helper to transform backend session to display format
 const transformSession = (session: Session): DisplaySession => {
-  const memberCount = session.members?.length || 1;
+  const memberCount = session.members?.length ?? 1;
+
   const lastActivity = new Date(session.last_activity);
   const now = new Date();
-  const diffInMinutes = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
-  
+  const diffInMinutes = Math.floor(
+    (now.getTime() - lastActivity.getTime()) / (1000 * 60)
+  );
+
   let timeString = "";
   if (diffInMinutes < 1) timeString = "Just now";
   else if (diffInMinutes < 60) timeString = `${diffInMinutes}m ago`;
-  else if (diffInMinutes < 1440) timeString = `${Math.floor(diffInMinutes / 60)}h ago`;
+  else if (diffInMinutes < 1440)
+    timeString = `${Math.floor(diffInMinutes / 60)}h ago`;
   else timeString = `${Math.floor(diffInMinutes / 1440)}d ago`;
 
   return {
     ...session,
-    id: session._id, // Create id alias
+    id: session._id,
     collaborators: memberCount,
     status: session.is_active ? "Live" : "Inactive",
     time: timeString,
@@ -39,6 +45,12 @@ export default function DashboardPage() {
   const [sessionList, setSessionList] = useState<DisplaySession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dashboardStats, setDashboardStats] = useState({
+    totalSessions: 0,
+    liveSessions: 0,
+    totalCollaborators: 0,
+    totalCodingMinutes: 0,
+  });
 
   const fetchSessions = async () => {
     try {
@@ -46,9 +58,34 @@ export default function DashboardPage() {
       setError(null);
 
       const res = await api.get("/api/sessions");
-      
+
       // Transform backend sessions to display format
-      const transformedSessions = (res.data.sessions || []).map(transformSession);
+      const transformedSessions: DisplaySession[] = (
+        res.data.sessions || []
+      ).map(transformSession);
+      const totalSessions = transformedSessions.length;
+
+      const liveSessions = transformedSessions.filter(
+        (s: DisplaySession) => s.status === "Live"
+      ).length;
+
+      const totalCollaborators = transformedSessions.reduce(
+        (sum, s) => sum + s.collaborators,
+        0
+      );
+
+      const totalCodingMinutes = transformedSessions.reduce((sum, s) => {
+        const last = new Date(s.last_activity).getTime();
+        const now = Date.now();
+        return sum + Math.floor((now - last) / (1000 * 60));
+      }, 0);
+
+      setDashboardStats({
+        totalSessions,
+        liveSessions,
+        totalCollaborators,
+        totalCodingMinutes,
+      });
       setSessionList(transformedSessions);
     } catch (error: any) {
       console.error("Failed to fetch sessions:", error);
@@ -122,22 +159,30 @@ export default function DashboardPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-              <div
-                key={index}
-                className="bg-[#111827] border border-[#1f2937] rounded-xl p-6 flex items-center justify-between shadow-md"
-              >
-                <div className="flex flex-col gap-1">
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-gray-400 text-sm">{stat.label}</p>
-                </div>
-                <div
-                  className={`p-3 bg-[#1f2937] rounded-lg ${stat.iconColor}`}
-                >
-                  {stat.icon}
-                </div>
-              </div>
-            ))}
+            <StatsGrid
+              value={dashboardStats.totalSessions}
+              label="Total Sessions"
+              icon={<FaCode className="text-blue-600 text-xl" />}
+              iconColor={"bg-blue-900/50"}
+            />
+            <StatsGrid
+              value={dashboardStats.liveSessions}
+              label="Live Sessions"
+              icon={<MdOutlinePlayCircle className="text-green-600 text-xl" />}
+              iconColor={"bg-green-900/50"}
+            />
+            <StatsGrid
+              value={dashboardStats.totalCollaborators}
+              label="Collaborators"
+              icon={<FaUsers className="text-purple-600 text-xl" />}
+              iconColor={"bg-purple-900/40"}
+            />
+            <StatsGrid
+              value={dashboardStats.totalCodingMinutes}
+              label="Coding Minutes"
+              icon={<FaClock className="text-orange-600 text-xl" />}
+              iconColor={"bg-orange-900/40"}
+            />
           </div>
 
           {/* Recent Sessions */}
