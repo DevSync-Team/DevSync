@@ -39,8 +39,8 @@ export default function EditorScreen() {
   const [showFiles, setShowFiles] = useState(true);
   const [showChat, setShowChat] = useState(true);
 
-  const { id } = useParams();
-  const session = sessions.find((s) => s._id === id);
+  const { _id } = useParams();
+  const session = sessions.find((s) => s._id === _id);
 
   if (!session) {
     return <div className="p-6">Session not found</div>;
