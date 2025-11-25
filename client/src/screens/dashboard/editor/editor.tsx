@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Play,
   Save,
@@ -26,6 +26,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { sessions } from "@/data/dashboard";
 import { ChatMessage } from "@/types/chats.types";
+import FileManager from "./modals/FileManager";
+
+export interface FileItem {
+  id: string;
+  name: string;
+  content: string;
+}
 
 export default function EditorScreen() {
   // --- Modals ---
@@ -38,13 +45,84 @@ export default function EditorScreen() {
   // --- Toggle Panels ---
   const [showFiles, setShowFiles] = useState(true);
   const [showChat, setShowChat] = useState(true);
-
   const { _id } = useParams();
   const session = sessions.find((s) => s._id === _id);
-
   if (!session) {
     return <div className="p-6">Session not found</div>;
   }
+  // File State
+  const [code, setCode] =
+    useState(`// Welcome to DevSync - Collaborative Coding Platform
+Start coding together with your team!
+
+function calculateSum(a, b {
+  return a + b;
+}`);
+
+  // Remove all file state & logic
+
+const extMap: Record<string, string> = {
+  javascript: "js",
+  typescript: "ts",
+  js: "js",
+  ts: "ts",
+};
+
+// Stores all files
+const [files, setFiles] = useState<FileItem[]>([
+  {
+    id: "1",
+    name: `main.${extMap[session.language.toLowerCase()] || "js"}`,
+    content: code,
+  },
+]);
+
+// Active file
+const [activeFileId, setActiveFileId] = useState("1");
+
+// Create a new file
+const handleCreateFile = (fileName: string) => {
+  if (!fileName.trim()) return;
+
+  // Determine extension based on session language
+  const ext = extMap[session.language.toLowerCase()] || "js";
+
+  // Remove any user-typed extension
+  const cleanName = fileName.replace(/\.[^/.]+$/, "");
+
+  const newFile: FileItem = {
+    id: Date.now().toString(),
+    name: `${cleanName}.${ext}`,
+    content: "",
+  };
+
+  setFiles((prev) => [...prev, newFile]);
+  setActiveFileId(newFile.id);
+  setCode("");
+};
+
+// Select a file
+const handleSelectFile = (id: string) => {
+  const f = files.find((x) => x.id === id);
+  if (!f) return;
+  setActiveFileId(id);
+  setCode(f.content);
+};
+
+// Delete a file
+const handleDeleteFile = (id: string) => {
+  setFiles((prev) => prev.filter((f) => f.id !== id));
+};
+
+// Sync editor changes to active file
+useEffect(() => {
+  setFiles((prev) =>
+    prev.map((f) =>
+      f.id === activeFileId ? { ...f, content: code } : f
+    )
+  );
+}, [code, activeFileId]);
+
   const [members, setMembers] = useState<Member[]>([
     {
       id: "1",
@@ -77,13 +155,6 @@ export default function EditorScreen() {
 
   const remove = (id: string) =>
     setMembers((m) => m.filter((x) => x.id !== id));
-  const [code, setCode] =
-    useState(`// Welcome to DevSync - Collaborative Coding Platform
-Start coding together with your team!
-
-function calculateSum(a, b {
-  return a + b;
-}`);
 
   const [output, setOutput] = useState("");
   const [activeUsers] = useState([
@@ -264,19 +335,24 @@ function calculateSum(a, b {
       <div className="flex flex-1 flex-col lg:flex-row overflow-hidden">
         {/* Sidebar */}
         {showFiles && (
-          <div className="w-full lg:w-56 bg-[#1c2536] border-b lg:border-b-0 lg:border-r border-[#3e3e42]">
-            <div className="p-2">
-              <div className="flex items-center justify-between px-2 py-1 bg-[#37373d] rounded">
-                <span className="text-sm">{session.name}</span>
-                <span className="text-xs text-gray-400">3</span>
-              </div>
-            </div>
-          </div>
+          <FileManager
+            files={files}
+            activeFileId={activeFileId}
+            onCreateFile={handleCreateFile}
+            onSelectFile={handleSelectFile}
+            onDeleteFile={handleDeleteFile}
+          />
         )}
 
         {/* Editor */}
         <div className="flex-1 flex flex-col min-h-0">
-          <CodeEditor code={code} setCode={setCode} language="js" />
+          <CodeEditor
+            code={code}
+            setCode={setCode}
+            language={
+              session.language === "javascript" ? "js" : session.language
+            }
+          />
 
           {/* Output Console */}
           <div className="h-32 sm:h-48 bg-[#1c2536] border-t border-[#313244]">
