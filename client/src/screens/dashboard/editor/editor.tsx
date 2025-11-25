@@ -45,6 +45,7 @@ export default function EditorScreen() {
   // --- Toggle Panels ---
   const [showFiles, setShowFiles] = useState(true);
   const [showChat, setShowChat] = useState(true);
+  
   const { _id } = useParams();
   const session = sessions.find((s) => s._id === _id);
   if (!session) {
@@ -59,7 +60,6 @@ function calculateSum(a, b {
   return a + b;
 }`);
 
-  // Remove all file state & logic
 
 const extMap: Record<string, string> = {
   javascript: "js",

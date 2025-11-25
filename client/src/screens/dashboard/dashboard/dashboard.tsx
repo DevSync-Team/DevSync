@@ -260,7 +260,7 @@ export default function DashboardPage() {
                         backgroundColor="bg-transparent"
                         color="text-blue-400"
                         className="text-sm hover:text-blue-300"
-                        onClick={() => router.push(`/editor/${session.id}`)}
+                        onClick={() => router.push(`/editor/${session._id}`)}
                       />
                     </div>
                   </div>
