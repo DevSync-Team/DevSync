@@ -35,6 +35,17 @@ interface Session {
   language: string;
   name?: string;
   description?: string;
+  members?: Array<{
+    _id: string;
+    user_id: {
+      _id: string;
+      full_name: string;
+    };
+    role: string;
+    status: string;
+    joined_at: string;
+    last_seen: string;
+  }>;
 }
 
 export default function EditorScreen() {
@@ -68,32 +79,8 @@ function calculateSum(a, b) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [activeFileId, setActiveFileId] = useState("1");
   
-  const [members, setMembers] = useState<Member[]>([
-    {
-      id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      role: "host",
-      avatar: "#8B5CF6",
-      online: true,
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      email: "jane@example.com",
-      role: "editor",
-      avatar: "#8B5CF6",
-      online: true,
-    },
-    {
-      id: "3",
-      name: "Bob Wilson",
-      email: "bob@example.com",
-      role: "viewer",
-      avatar: "#8B5CF6",
-      online: true,
-    },
-  ]);
+  // ✅ Members from API - initially empty
+  const [members, setMembers] = useState<Member[]>([]);
 
   const [output, setOutput] = useState("");
   const [activeUsers] = useState([
@@ -148,9 +135,26 @@ function calculateSum(a, b) {
         const response = await api.get(`/api/sessions/${sessionId}`);
         
         console.log("✅ Session loaded from backend:", response.data);
+        
         // ✅ Handle both {session: {...}} and {...} response formats
         const sessionData = response.data.session || response.data;
         setSession(sessionData);
+        
+        // ✅ Transform API members to your Member interface
+        if (sessionData.members && Array.isArray(sessionData.members)) {
+          const transformedMembers: Member[] = sessionData.members.map((member: any) => ({
+            id: member._id,
+            name: member.user_id.full_name,
+            email: member.user_id.email || `${member.user_id.full_name.toLowerCase().replace(' ', '.')}@example.com`, // Fallback if email not in response
+            role: member.role as "host" | "editor" | "viewer",
+            avatar: "#8B5CF6", // You can generate different colors based on user
+            online: member.status === "online",
+          }));
+          
+          console.log("👥 Transformed members:", transformedMembers);
+          setMembers(transformedMembers);
+        }
+        
         setError(null);
       } catch (err: any) {
         console.error("❌ Error fetching session:", err);
@@ -182,7 +186,7 @@ function calculateSum(a, b) {
         },
       ]);
     }
-  }, [session]);
+  }, [session, code]);
   
   // Sync editor changes to active file
   useEffect(() => {
@@ -299,6 +303,7 @@ function calculateSum(a, b) {
   };
 
   console.log("🎯 Rendering editor with sessionId:", sessionId);
+  console.log("👥 Current members count:", members.length);
 
   return (
     <div className="flex flex-col h-screen bg-[#111827] text-gray-100 font-sans">
@@ -375,15 +380,27 @@ function calculateSum(a, b) {
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2">
+          {/* ✅ Show real member avatars */}
           <div className="flex -space-x-1 sm:-space-x-2">
-            {activeUsers.map((user) => (
-              <div
-                key={user.id}
-                className={`w-6 h-6 sm:w-8 sm:h-8 ${user.color} rounded-full border-2 border-[#111827] flex items-center justify-center text-xs sm:text-sm font-medium`}
-              >
-                {user.name}
+            {members.slice(0, 3).map((member, index) => {
+              const colors = ['bg-purple-500', 'bg-pink-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500'];
+              const initial = member.name.charAt(0).toUpperCase();
+              
+              return (
+                <div
+                  key={member.id}
+                  className={`w-6 h-6 sm:w-8 sm:h-8 ${colors[index % colors.length]} rounded-full border-2 border-[#111827] flex items-center justify-center text-xs sm:text-sm font-medium`}
+                  title={member.name}
+                >
+                  {initial}
+                </div>
+              );
+            })}
+            {members.length > 3 && (
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-500 rounded-full border-2 border-[#111827] flex items-center justify-center text-xs sm:text-sm font-medium">
+                +{members.length - 3}
               </div>
-            ))}
+            )}
           </div>
           <button
             onClick={() => setShowSessionModal(true)}
@@ -493,13 +510,16 @@ function calculateSum(a, b) {
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         sessionId={sessionId}
-        onInviteSuccess={(email) => console.log(`Successfully sent invite to ${email}`)}
+        onInviteSuccess={(email) => {
+          console.log(`Successfully sent invite to ${email}`);
+          // Optionally refetch session to get updated members list
+        }}
       />
       
       <ShareSessionModal
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
-        sessionUrl={`https://readdy.link/editor/${sessionId}`}
+        sessionUrl={`http://localhost:3000/editor/${sessionId}`}
       />
     </div>
   );
