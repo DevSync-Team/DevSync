@@ -30,13 +30,19 @@ export const isSessionMember = async (req: AuthenticatedRequest, res: Response, 
   const userId = req.userId;
   const sessionId = req.params.sessionId;
 
+  // --- Start Logging/Validation for Debugging ---
+  console.log(`[isSessionMember] Checking membership for User: ${userId} in Session: ${sessionId}`);
+  
   if (!userId) {
+    console.error("[isSessionMember] Failure: User ID missing from request.");
     return res.status(401).json({ message: "Unauthorized: User ID missing." });
   }
 
   if (!sessionId) {
+    console.error("[isSessionMember] Failure: Session ID missing from path params.");
     return res.status(400).json({ message: "Bad Request: Session ID is missing in path." });
   }
+  // --- End Logging/Validation for Debugging ---
 
   try {
     const member = await SessionMember.findOne({ 
@@ -45,14 +51,22 @@ export const isSessionMember = async (req: AuthenticatedRequest, res: Response, 
     }).select('role');
 
     if (!member) {
+      console.warn(`[isSessionMember] Forbidden: User ${userId} is not a member of session ${sessionId}.`);
       return res.status(403).json({ message: "Forbidden: Not a member of this session." });
     }
 
     // Attach session ID and standardized Role to the request
     req.sessionId = sessionId;
     req.memberRole = member.role as Role; // Cast to Role Enum
+    console.log(`[isSessionMember] Success: User ${userId} role is ${req.memberRole}.`);
     next();
   } catch (err) {
+    // --- CRITICAL DEBUG LOGGING ADDED HERE ---
+    console.error(`[isSessionMember] Fatal Database Error for Session ${sessionId}:`, err); 
+    // This log will expose Mongoose errors (like "Cast to ObjectId failed") 
+    // which is the most likely cause of the generic 500 error.
+    // --- END CRITICAL DEBUG LOGGING ---
+    
     res.status(500).json({ message: "Server error during membership check." });
   }
 };
@@ -69,7 +83,7 @@ export const checkSessionRole = (allowedRoles: Role[]) => {
         const role = req.memberRole;
 
         if (!role) {
-            // This should ideally never happen if isSessionMember runs first
+            console.error("[checkSessionRole] Internal Error: memberRole missing. isSessionMember was not run or failed.");
             return res.status(500).json({ message: "Internal server error: Role not defined." });
         }
 

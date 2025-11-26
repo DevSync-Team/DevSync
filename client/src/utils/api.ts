@@ -28,12 +28,16 @@ const api = axios.create({
 // Attach access token from cookie to Authorization header
 api.interceptors.request.use(
   (config) => {
-    // ✅ Read the correct cookie name (authToken instead of accessToken)
+    // 1. Attempt to read the token
     const token = getCookie("authToken");
 
     if (token) {
-      // ✅ Set the Authorization header with Bearer scheme
+      // 2. If valid token is found, set the header correctly
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // 3. 🚨 CRITICAL FIX: If token is null (e.g., during SSR or if cookie is missing),
+      //    explicitly delete the header to prevent sending "Bearer null".
+      delete config.headers.Authorization; 
     }
 
     return config;
@@ -41,7 +45,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Global response error handling
+// Global response error handling (This section is already good)
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {

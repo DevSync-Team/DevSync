@@ -10,10 +10,6 @@ import {
   UserPlus,
   Share2,
   FileCode,
-  MessageSquare,
-  Settings,
-  Plus,
-  Minus,
 } from "lucide-react";
 import { Button, ChatSidebar, CodeEditor } from "@/components";
 import VersionHistoryModal from "./modals/VersionHistoryModal";
@@ -24,9 +20,9 @@ import { Member } from "./interface/interface";
 import ShareSessionModal from "./modals/SessionModal";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { sessions } from "@/data/dashboard";
 import { ChatMessage } from "@/types/chats.types";
 import FileManager from "./modals/FileManager";
+import api from "@/utils/api";
 
 export interface FileItem {
   id: string;
@@ -34,7 +30,17 @@ export interface FileItem {
   content: string;
 }
 
+interface Session {
+  _id: string;
+  language: string;
+  name?: string;
+  description?: string;
+}
+
 export default function EditorScreen() {
+  const params = useParams();
+  
+  // ✅ ALL HOOKS AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
   // --- Modals ---
   const [historyOpen, setHistoryOpen] = useState(false);
   const [snapshotOpen, setSnapshotOpen] = useState(false);
@@ -46,83 +52,22 @@ export default function EditorScreen() {
   const [showFiles, setShowFiles] = useState(true);
   const [showChat, setShowChat] = useState(true);
   
-  const { _id } = useParams();
-  const session = sessions.find((s) => s._id === _id);
-  if (!session) {
-    return <div className="p-6">Session not found</div>;
-  }
-  // File State
-  const [code, setCode] =
-    useState(`// Welcome to DevSync - Collaborative Coding Platform
+  // --- Session State ---
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // --- Editor State ---
+  const [code, setCode] = useState(`// Welcome to DevSync - Collaborative Coding Platform
 Start coding together with your team!
 
-function calculateSum(a, b {
+function calculateSum(a, b) {
   return a + b;
 }`);
 
-
-const extMap: Record<string, string> = {
-  javascript: "js",
-  typescript: "ts",
-  js: "js",
-  ts: "ts",
-};
-
-// Stores all files
-const [files, setFiles] = useState<FileItem[]>([
-  {
-    id: "1",
-    name: `main.${extMap[session.language.toLowerCase()] || "js"}`,
-    content: code,
-  },
-]);
-
-// Active file
-const [activeFileId, setActiveFileId] = useState("1");
-
-// Create a new file
-const handleCreateFile = (fileName: string) => {
-  if (!fileName.trim()) return;
-
-  // Determine extension based on session language
-  const ext = extMap[session.language.toLowerCase()] || "js";
-
-  // Remove any user-typed extension
-  const cleanName = fileName.replace(/\.[^/.]+$/, "");
-
-  const newFile: FileItem = {
-    id: Date.now().toString(),
-    name: `${cleanName}.${ext}`,
-    content: "",
-  };
-
-  setFiles((prev) => [...prev, newFile]);
-  setActiveFileId(newFile.id);
-  setCode("");
-};
-
-// Select a file
-const handleSelectFile = (id: string) => {
-  const f = files.find((x) => x.id === id);
-  if (!f) return;
-  setActiveFileId(id);
-  setCode(f.content);
-};
-
-// Delete a file
-const handleDeleteFile = (id: string) => {
-  setFiles((prev) => prev.filter((f) => f.id !== id));
-};
-
-// Sync editor changes to active file
-useEffect(() => {
-  setFiles((prev) =>
-    prev.map((f) =>
-      f.id === activeFileId ? { ...f, content: code } : f
-    )
-  );
-}, [code, activeFileId]);
-
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [activeFileId, setActiveFileId] = useState("1");
+  
   const [members, setMembers] = useState<Member[]>([
     {
       id: "1",
@@ -149,12 +94,6 @@ useEffect(() => {
       online: true,
     },
   ]);
-
-  const changeRole = (id: string, role: "editor" | "viewer") =>
-    setMembers((m) => m.map((x) => (x.id === id ? { ...x, role } : x)));
-
-  const remove = (id: string) =>
-    setMembers((m) => m.filter((x) => x.id !== id));
 
   const [output, setOutput] = useState("");
   const [activeUsers] = useState([
@@ -187,10 +126,157 @@ useEffect(() => {
       isCode: true,
     },
   ]);
+  
+  // NOW extract sessionId
+  const id = params?.id;
+  const sessionId = Array.isArray(id) ? id[0] : id;
+  
+  console.log("🔍 sessionId from URL:", sessionId);
+  
+  // ✅ Fetch session from backend
+  useEffect(() => {
+    if (!sessionId) {
+      setLoading(false);
+      return;
+    }
+    
+    const fetchSession = async () => {
+      try {
+        setLoading(true);
+        console.log("📡 Fetching session from backend:", sessionId);
+        
+        const response = await api.get(`/api/sessions/${sessionId}`);
+        
+        console.log("✅ Session loaded from backend:", response.data);
+        // ✅ Handle both {session: {...}} and {...} response formats
+        const sessionData = response.data.session || response.data;
+        setSession(sessionData);
+        setError(null);
+      } catch (err: any) {
+        console.error("❌ Error fetching session:", err);
+        setError(err.response?.data?.message || "Failed to load session");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSession();
+  }, [sessionId]);
+  
+  // ✅ Initialize files when session loads
+  useEffect(() => {
+    if (session) {
+      const extMap: Record<string, string> = {
+        javascript: "js",
+        typescript: "ts",
+        js: "js",
+        ts: "ts",
+        python: "py",
+      };
+      
+      setFiles([
+        {
+          id: "1",
+          name: `main.${extMap[session.language.toLowerCase()] || "js"}`,
+          content: code,
+        },
+      ]);
+    }
+  }, [session]);
+  
+  // Sync editor changes to active file
+  useEffect(() => {
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === activeFileId ? { ...f, content: code } : f
+      )
+    );
+  }, [code, activeFileId]);
+  
+  // NOW conditional returns AFTER all hooks
+  if (!sessionId) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#111827] text-gray-100">
+        <div className="text-center">
+          <p className="text-gray-400">No session ID provided</p>
+          <Link href="/dashboard" className="text-blue-500 hover:underline mt-4 inline-block">
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#111827] text-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>Loading session...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error || !session) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#111827] text-gray-100">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error || "Session not found"}</p>
+          <Link href="/dashboard" className="text-blue-500 hover:underline">
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
+  // Helper functions
+  const extMap: Record<string, string> = {
+    javascript: "js",
+    typescript: "ts",
+    js: "js",
+    ts: "ts",
+    python: "py",
+  };
+
+  const handleCreateFile = (fileName: string) => {
+    if (!fileName.trim()) return;
+    const ext = extMap[session.language.toLowerCase()] || "js";
+    const cleanName = fileName.replace(/\.[^/.]+$/, "");
+
+    const newFile: FileItem = {
+      id: Date.now().toString(),
+      name: `${cleanName}.${ext}`,
+      content: "",
+    };
+
+    setFiles((prev) => [...prev, newFile]);
+    setActiveFileId(newFile.id);
+    setCode("");
+  };
+
+  const handleSelectFile = (id: string) => {
+    const f = files.find((x) => x.id === id);
+    if (!f) return;
+    setActiveFileId(id);
+    setCode(f.content);
+  };
+
+  const handleDeleteFile = (id: string) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const changeRole = (id: string, role: "editor" | "viewer") =>
+    setMembers((m) => m.map((x) => (x.id === id ? { ...x, role } : x)));
+
+  const remove = (id: string) =>
+    setMembers((m) => m.filter((x) => x.id !== id));
+  
   const handleSendMessage = (message: string) => {
     const newMessage: ChatMessage = {
       id: chatMessages.length + 1,
-      user: "You", // Current user
+      user: "You",
       message: message,
       time: new Date().toLocaleTimeString([], {
         hour: "2-digit",
@@ -200,16 +286,19 @@ useEffect(() => {
       isCode:
         message.includes("function") ||
         message.includes("const ") ||
-        message.includes("let "), // Simple code detection
+        message.includes("let "),
     };
 
     setChatMessages((prev) => [...prev, newMessage]);
   };
+  
   const handleRunCode = () => {
     setOutput(
       "Hello, Developer! Welcome to DevSync.\nResult: 8\nDevSync is ready for collaboration!"
     );
   };
+
+  console.log("🎯 Rendering editor with sessionId:", sessionId);
 
   return (
     <div className="flex flex-col h-screen bg-[#111827] text-gray-100 font-sans">
@@ -223,7 +312,7 @@ useEffect(() => {
             <span className="text-lg sm:text-xl font-semibold">DevSync</span>
           </Link>
           <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-400 ">
-            <div>Session:{session._id}</div>
+            <div>Session: {session.name || sessionId.substring(0, 8) + '...'}</div>
             <button
               onClick={() => setShareModalOpen(true)}
               className="flex items-center gap-1 px-2 py-1 hover:bg-[#2d2d30] rounded"
@@ -248,7 +337,7 @@ useEffect(() => {
         <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
           <select
             title="languageoptions"
-            className="px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm"
+            className="px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm bg-slate-700"
           >
             <option>{session.language}</option>
           </select>
@@ -261,7 +350,7 @@ useEffect(() => {
           />
           <button
             onClick={() => setSnapshotOpen(true)}
-            className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm"
+            className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm hover:bg-slate-700"
           >
             <Save className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden xs:inline">Save Snapshot</span>
@@ -269,17 +358,17 @@ useEffect(() => {
           </button>
           <button
             onClick={() => setHistoryOpen(true)}
-            className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm"
+            className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm hover:bg-slate-700"
           >
             <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden xs:inline">History (1)</span>
             <span className="xs:hidden">History</span>
           </button>
-          <button className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm">
+          <button className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm hover:bg-slate-700">
             <FileUp className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Export</span>
           </button>
-          <button className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm">
+          <button className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm hover:bg-slate-700">
             <Download className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Download</span>
           </button>
@@ -298,19 +387,22 @@ useEffect(() => {
           </div>
           <button
             onClick={() => setShowSessionModal(true)}
-            className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm"
+            className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm hover:bg-slate-700"
           >
             <Users className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">{members.length}</span>
           </button>
           <button
-            onClick={() => setShowInviteModal(true)}
+            onClick={() => {
+              console.log("🔵 Opening invite modal, sessionId:", sessionId);
+              setShowInviteModal(true);
+            }}
             className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-500 hover:bg-blue-600 rounded text-xs sm:text-sm font-medium"
           >
             <UserPlus className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Invite</span>
           </button>
-          <button className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm">
+          <button className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded text-xs sm:text-sm hover:bg-slate-700">
             <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Share</span>
           </button>
@@ -333,7 +425,6 @@ useEffect(() => {
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col lg:flex-row overflow-hidden">
-        {/* Sidebar */}
         {showFiles && (
           <FileManager
             files={files}
@@ -344,17 +435,15 @@ useEffect(() => {
           />
         )}
 
-        {/* Editor */}
         <div className="flex-1 flex flex-col min-h-0">
           <CodeEditor
             code={code}
             setCode={setCode}
             language={
-              session.language === "javascript" ? "js" : session.language
+              session.language === "javascript" ? "js" : session.language.toLowerCase()
             }
           />
 
-          {/* Output Console */}
           <div className="h-32 sm:h-48 bg-[#1c2536] border-t border-[#313244]">
             <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1c2536] border-b border-[#313244]">
               <span className="text-sm">Output Console</span>
@@ -365,7 +454,6 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Chat Sidebar */}
         {showChat && (
           <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-[#3e3e42]">
             <ChatSidebar
@@ -389,11 +477,12 @@ useEffect(() => {
           setSnapshotOpen(false);
         }}
       />
+      
       <SessionMembersModal
         isOpen={showSessionModal}
         onClose={() => setShowSessionModal(false)}
         members={members}
-        sessionId="r6t1l6e3b3k"
+        sessionId={sessionId}
         sessionDate="11/15/2025"
         onRoleChange={changeRole}
         onRemoveMember={remove}
@@ -403,12 +492,14 @@ useEffect(() => {
       <InviteCollaboratorModal
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}
-        onInvite={(email, role) => alert(`Invited ${email} as ${role}`)}
+        sessionId={sessionId}
+        onInviteSuccess={(email) => console.log(`Successfully sent invite to ${email}`)}
       />
+      
       <ShareSessionModal
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
-        sessionUrl="https://readdy.link/editor/r6t1l6e3b3k"
+        sessionUrl={`https://readdy.link/editor/${sessionId}`}
       />
     </div>
   );
