@@ -12,6 +12,8 @@ import api from "@/utils/api";
 import StatsGrid from "@/components/StatsCard/StatsCard";
 import { FaClock, FaCode, FaUsers } from "react-icons/fa";
 import { MdOutlinePlayCircle } from "react-icons/md";
+import { apiLogout, getAuthToken } from "@/api/auth.api";
+import React from "react";
 
 // Helper to transform backend session to display format
 const transformSession = (session: Session): DisplaySession => {
@@ -38,6 +40,7 @@ const transformSession = (session: Session): DisplaySession => {
     time: timeString,
   };
 };
+  const isLoggedIn = !!getAuthToken();
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -123,18 +126,22 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="flex items-center justify-end gap-2 sm:gap-3">
-          <Link
-            href="/signin"
-            className="bg-transparent text-white px-4 py-2 rounded-md text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all shadow-sm hover:shadow-md"
-          >
-            Signin
-          </Link>
-          <Link
-            href="/signin"
-            className="bg-linear-to-r from-blue-500 to-cyan-400 text-white px-4 py-2 rounded-md text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all shadow-sm hover:shadow-md"
-          >
-            Get Started
-          </Link>
+            {!isLoggedIn && (
+              <Link href="/signin">
+                <button className="px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm bg-linear-to-r from-blue-500 to-cyan-400 text-white rounded">
+                  Sign In
+                </button>
+              </Link>
+            )}
+
+            {isLoggedIn && (
+              <button
+                onClick={apiLogout}
+                className="px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm bg-linear-to-r from-blue-500 to-cyan-400 text-white rounded"
+              >
+                Logout
+              </button>
+            )}
         </div>
       </div>
 
@@ -160,25 +167,25 @@ export default function DashboardPage() {
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatsGrid
-              value={dashboardStats.totalSessions}
+              value={dashboardStats.totalSessions.toLocaleString()}
               label="Total Sessions"
               icon={<FaCode className="text-blue-600 text-xl" />}
               iconColor={"bg-blue-900/50"}
             />
             <StatsGrid
-              value={dashboardStats.liveSessions}
+              value={dashboardStats.liveSessions.toLocaleString()}
               label="Live Sessions"
               icon={<MdOutlinePlayCircle className="text-green-600 text-xl" />}
               iconColor={"bg-green-900/50"}
             />
             <StatsGrid
-              value={dashboardStats.totalCollaborators}
+              value={dashboardStats.totalCollaborators.toLocaleString()}
               label="Collaborators"
               icon={<FaUsers className="text-purple-600 text-xl" />}
               iconColor={"bg-purple-900/40"}
             />
             <StatsGrid
-              value={dashboardStats.totalCodingMinutes}
+              value={dashboardStats.totalCodingMinutes.toLocaleString()}
               label="Coding Minutes"
               icon={<FaClock className="text-orange-600 text-xl" />}
               iconColor={"bg-orange-900/40"}
@@ -228,9 +235,9 @@ export default function DashboardPage() {
             {/* Sessions List */}
             {!loading && !error && sessionList.length > 0 && (
               <div className="divide-y divide-[#1f2937]">
-                {sessionList.map((session) => (
+                {sessionList.map((session, i) => (
                   <div
-                    key={session.id}
+                    key={i}
                     className="flex justify-between items-center py-4 hover:bg-[#1a1f2a] transition-colors rounded-lg px-3"
                   >
                     <div className="flex flex-col gap-1">

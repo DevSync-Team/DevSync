@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
-
 
 export const metadata: Metadata = {
   title: "DevSync",
@@ -16,13 +15,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <main>
-       
-        <body>{children}
-          <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
-        </body>
-        
-      </main>
+      <body>
+        {children}
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
+      </body>
     </html>
   );
 }

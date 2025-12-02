@@ -23,6 +23,7 @@ import { useParams } from "next/navigation";
 import { ChatMessage } from "@/types/chats.types";
 import FileManager from "./modals/FileManager";
 import api from "@/utils/api";
+import { apiLogin, apiLogout, getAuthToken } from "@/api/auth.api";
 
 export interface FileItem {
   id: string;
@@ -50,7 +51,8 @@ interface Session {
 
 export default function EditorScreen() {
   const params = useParams();
-  
+  const isLoggedIn = !!getAuthToken();
+
   // ✅ ALL HOOKS AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
   // --- Modals ---
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -62,14 +64,15 @@ export default function EditorScreen() {
   // --- Toggle Panels ---
   const [showFiles, setShowFiles] = useState(true);
   const [showChat, setShowChat] = useState(true);
-  
+
   // --- Session State ---
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // --- Editor State ---
-  const [code, setCode] = useState(`// Welcome to DevSync - Collaborative Coding Platform
+  const [code, setCode] =
+    useState(`// Welcome to DevSync - Collaborative Coding Platform
 Start coding together with your team!
 
 function calculateSum(a, b) {
@@ -78,7 +81,7 @@ function calculateSum(a, b) {
 
   const [files, setFiles] = useState<FileItem[]>([]);
   const [activeFileId, setActiveFileId] = useState("1");
-  
+
   // ✅ Members from API - initially empty
   const [members, setMembers] = useState<Member[]>([]);
 
@@ -113,48 +116,54 @@ function calculateSum(a, b) {
       isCode: true,
     },
   ]);
-  
+
   // NOW extract sessionId
   const id = params?.id;
   const sessionId = Array.isArray(id) ? id[0] : id;
-  
+
   console.log("🔍 sessionId from URL:", sessionId);
-  
+
   // ✅ Fetch session from backend
   useEffect(() => {
     if (!sessionId) {
       setLoading(false);
       return;
     }
-    
+
     const fetchSession = async () => {
       try {
         setLoading(true);
         console.log("📡 Fetching session from backend:", sessionId);
-        
+
         const response = await api.get(`/api/sessions/${sessionId}`);
-        
+
         console.log("✅ Session loaded from backend:", response.data);
-        
+
         // ✅ Handle both {session: {...}} and {...} response formats
         const sessionData = response.data.session || response.data;
         setSession(sessionData);
-        
+
         // ✅ Transform API members to your Member interface
         if (sessionData.members && Array.isArray(sessionData.members)) {
-          const transformedMembers: Member[] = sessionData.members.map((member: any) => ({
-            id: member._id,
-            name: member.user_id.full_name,
-            email: member.user_id.email || `${member.user_id.full_name.toLowerCase().replace(' ', '.')}@example.com`, // Fallback if email not in response
-            role: member.role as "host" | "editor" | "viewer",
-            avatar: "#8B5CF6", // You can generate different colors based on user
-            online: member.status === "online",
-          }));
-          
+          const transformedMembers: Member[] = sessionData.members.map(
+            (member: any) => ({
+              id: member._id,
+              name: member.user_id.full_name,
+              email:
+                member.user_id.email ||
+                `${member.user_id.full_name
+                  .toLowerCase()
+                  .replace(" ", ".")}@example.com`, // Fallback if email not in response
+              role: member.role as "host" | "editor" | "viewer",
+              avatar: "#8B5CF6", // You can generate different colors based on user
+              online: member.status === "online",
+            })
+          );
+
           console.log("👥 Transformed members:", transformedMembers);
           setMembers(transformedMembers);
         }
-        
+
         setError(null);
       } catch (err: any) {
         console.error("❌ Error fetching session:", err);
@@ -163,10 +172,10 @@ function calculateSum(a, b) {
         setLoading(false);
       }
     };
-    
+
     fetchSession();
   }, [sessionId]);
-  
+
   // ✅ Initialize files when session loads
   useEffect(() => {
     if (session) {
@@ -177,7 +186,7 @@ function calculateSum(a, b) {
         ts: "ts",
         python: "py",
       };
-      
+
       setFiles([
         {
           id: "1",
@@ -187,30 +196,31 @@ function calculateSum(a, b) {
       ]);
     }
   }, [session, code]);
-  
+
   // Sync editor changes to active file
   useEffect(() => {
     setFiles((prev) =>
-      prev.map((f) =>
-        f.id === activeFileId ? { ...f, content: code } : f
-      )
+      prev.map((f) => (f.id === activeFileId ? { ...f, content: code } : f))
     );
   }, [code, activeFileId]);
-  
+
   // NOW conditional returns AFTER all hooks
   if (!sessionId) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#111827] text-gray-100">
         <div className="text-center">
           <p className="text-gray-400">No session ID provided</p>
-          <Link href="/dashboard" className="text-blue-500 hover:underline mt-4 inline-block">
+          <Link
+            href="/dashboard"
+            className="text-blue-500 hover:underline mt-4 inline-block"
+          >
             Back to Dashboard
           </Link>
         </div>
       </div>
     );
   }
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#111827] text-gray-100">
@@ -221,7 +231,7 @@ function calculateSum(a, b) {
       </div>
     );
   }
-  
+
   if (error || !session) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#111827] text-gray-100">
@@ -234,7 +244,7 @@ function calculateSum(a, b) {
       </div>
     );
   }
-  
+
   // Helper functions
   const extMap: Record<string, string> = {
     javascript: "js",
@@ -276,7 +286,7 @@ function calculateSum(a, b) {
 
   const remove = (id: string) =>
     setMembers((m) => m.filter((x) => x.id !== id));
-  
+
   const handleSendMessage = (message: string) => {
     const newMessage: ChatMessage = {
       id: chatMessages.length + 1,
@@ -295,7 +305,7 @@ function calculateSum(a, b) {
 
     setChatMessages((prev) => [...prev, newMessage]);
   };
-  
+
   const handleRunCode = () => {
     setOutput(
       "Hello, Developer! Welcome to DevSync.\nResult: 8\nDevSync is ready for collaboration!"
@@ -317,7 +327,9 @@ function calculateSum(a, b) {
             <span className="text-lg sm:text-xl font-semibold">DevSync</span>
           </Link>
           <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-400 ">
-            <div>Session: {session.name || sessionId.substring(0, 8) + '...'}</div>
+            <div>
+              Session: {session.name || sessionId.substring(0, 8) + "..."}
+            </div>
             <button
               onClick={() => setShareModalOpen(true)}
               className="flex items-center gap-1 px-2 py-1 hover:bg-[#2d2d30] rounded"
@@ -328,12 +340,24 @@ function calculateSum(a, b) {
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 sm:gap-3">
-          <button className="px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm hover:bg-[#2d2d30] rounded">
-            Sign In
-          </button>
-          <button className="px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm bg-blue-500 hover:bg-blue-600 rounded font-medium">
-            Get Started
-          </button>
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
+            {!isLoggedIn && (
+              <Link href="/signin">
+                <button className="px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm bg-linear-to-r from-blue-500 to-cyan-400 text-white rounded">
+                  Sign In
+                </button>
+              </Link>
+            )}
+
+            {isLoggedIn && (
+              <button
+                onClick={apiLogout}
+                className="px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm bg-linear-to-r from-blue-500 to-cyan-400 text-white rounded"
+              >
+                Logout
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -383,13 +407,21 @@ function calculateSum(a, b) {
           {/* ✅ Show real member avatars */}
           <div className="flex -space-x-1 sm:-space-x-2">
             {members.slice(0, 3).map((member, index) => {
-              const colors = ['bg-purple-500', 'bg-pink-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500'];
+              const colors = [
+                "bg-purple-500",
+                "bg-pink-500",
+                "bg-blue-500",
+                "bg-green-500",
+                "bg-yellow-500",
+              ];
               const initial = member.name.charAt(0).toUpperCase();
-              
+
               return (
                 <div
                   key={member.id}
-                  className={`w-6 h-6 sm:w-8 sm:h-8 ${colors[index % colors.length]} rounded-full border-2 border-[#111827] flex items-center justify-center text-xs sm:text-sm font-medium`}
+                  className={`w-6 h-6 sm:w-8 sm:h-8 ${
+                    colors[index % colors.length]
+                  } rounded-full border-2 border-[#111827] flex items-center justify-center text-xs sm:text-sm font-medium`}
                   title={member.name}
                 >
                   {initial}
@@ -457,7 +489,9 @@ function calculateSum(a, b) {
             code={code}
             setCode={setCode}
             language={
-              session.language === "javascript" ? "js" : session.language.toLowerCase()
+              session.language === "javascript"
+                ? "js"
+                : session.language.toLowerCase()
             }
           />
 
@@ -494,7 +528,7 @@ function calculateSum(a, b) {
           setSnapshotOpen(false);
         }}
       />
-      
+
       <SessionMembersModal
         isOpen={showSessionModal}
         onClose={() => setShowSessionModal(false)}
@@ -515,7 +549,7 @@ function calculateSum(a, b) {
           // Optionally refetch session to get updated members list
         }}
       />
-      
+
       <ShareSessionModal
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
